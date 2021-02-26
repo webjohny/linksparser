@@ -1,24 +1,27 @@
 package main
 
 import (
+	"linksparser/config"
 	//"os"
 	//"time"
+	"linksparser/mysql"
+	"os"
 )
 
 var (
-	//UTILS   Utils
-	//MYSQL   MysqlDb
-	//CONF    config.Configuration
+	UTILS   Utils
+	MYSQL   mysql.Instance
+	CONF    config.Configuration
 	//STREAMS Streams
 )
 
 func main() {
-	//path, _ := os.Getwd()
+	path, _ := os.Getwd()
 
-	//CONF.Create(path + "/config.json")
+	CONF.Create(path + "/config.json")
 
 	// Connect to MysqlDB
-	//MYSQL.CreateConnection(CONF.MysqlHost, CONF.MysqlDb, //CONF.MysqlLogin, CONF.MysqlPass)
+	MYSQL = mysql.CreateConnection(CONF.MysqlHost, CONF.MysqlDb, CONF.MysqlLogin, CONF.MysqlPass)
 
 	// Run routes
 
