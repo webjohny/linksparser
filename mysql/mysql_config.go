@@ -8,9 +8,7 @@ import (
 )
 
 type ConfigExtra struct {
-	DeepPaa bool `json:"deep_paa"`
-	RedirectMethod bool `json:"redirect_method"`
-	FastParsing bool `json:"fast_parsing"`
+	AdjacentKeys bool `json:"adjacent_keys"`
 	CountStreams int `json:"count_streams"`
 	LimitStreams int `json:"limit_streams"`
 	CmdStreams string `json:"cmd_streams"`
@@ -63,14 +61,8 @@ func (c *Config) GetExtra() ConfigExtra {
 
 	var extra map[string]interface{}
 	_ = json.Unmarshal([]byte(c.Extra.String), &extra)
-	if v, ok := extra["deep_paa"] ; ok {
-		Extra.DeepPaa = v.(bool)
-	}
-	if v, ok := extra["redirect_method"] ; ok {
-		Extra.RedirectMethod = v.(bool)
-	}
-	if v, ok := extra["fast_parsing"] ; ok {
-		Extra.FastParsing = v.(bool)
+	if v, ok := extra["adjacent_keys"] ; ok {
+		Extra.AdjacentKeys = v.(bool)
 	}
 	if v, ok := extra["count_streams"] ; ok {
 		Extra.CountStreams = int(v.(float64))

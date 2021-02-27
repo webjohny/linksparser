@@ -1,4 +1,4 @@
-package main
+package services
 
 import (
 	"github.com/PuerkitoBio/goquery"
@@ -14,39 +14,11 @@ import (
 	"time"
 )
 
-type Utils struct {}
-
-func isNil(i interface{}) bool {
+func IsNil(i interface{}) bool {
 	return i == nil || reflect.ValueOf(i).IsNil()
 }
 
-func (u *Utils) MysqlRealEscapeString(value string) string {
-	replace := map[string]string{"\\":"\\\\", "'":`\'`, "\\0":"\\\\0", "\n":"\\n", "\r":"\\r", `"`:`\"`, "\x1a":"\\Z"}
-
-	for b, a := range replace {
-		value = strings.Replace(value, b, a, -1)
-	}
-
-	return value
-}
-
-func (u *Utils) ArrayRand(arr []string) string {
-	rand.Seed(time.Now().UnixNano())
-	n := rand.Int() % len(arr)
-	return strings.Trim(arr[n], " ")
-}
-
-func (u *Utils) RandStringRunes(n int) string {
-	letterRunes := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	return string(b)
-}
-
-func (u *Utils) SetInterval(someFunc func(), milliseconds int, async bool) chan bool {
+func SetInterval(someFunc func(), milliseconds int, async bool) chan bool {
 
 	// How often to fire the passed in function
 	// in milliseconds
@@ -82,19 +54,46 @@ func (u *Utils) SetInterval(someFunc func(), milliseconds int, async bool) chan 
 	// We return the channel so we can pass in
 	// a value to it to clear the interval
 	return clear
+
 }
 
-func (u *Utils) ErrorHandler(err error) {
+func MysqlRealEscapeString(value string) string {
+	replace := map[string]string{"\\":"\\\\", "'":`\'`, "\\0":"\\\\0", "\n":"\\n", "\r":"\\r", `"`:`\"`, "\x1a":"\\Z"}
+
+	for b, a := range replace {
+		value = strings.Replace(value, b, a, -1)
+	}
+
+	return value
+}
+
+func ArrayRand(arr []string) string {
+	rand.Seed(time.Now().UnixNano())
+	n := rand.Int() % len(arr)
+	return strings.Trim(arr[n], " ")
+}
+
+func RandStringRunes(n int) string {
+	letterRunes := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
+
+func ErrorHandler(err error) {
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func (u *Utils) SentenceSplit(str string) []string {
-	return u.PregSplit(str, `([.?!])\s+`)
+func SentenceSplit(str string) []string {
+	return PregSplit(str, `([.?!])\s+`)
 }
 
-func (u *Utils) PregSplit(text string, delimeter string) []string {
+func PregSplit(text string, delimeter string) []string {
 	reg := regexp.MustCompile(delimeter)
 	indexes := reg.FindAllStringIndex(text, -1)
 	laststart := 0
@@ -107,7 +106,7 @@ func (u *Utils) PregSplit(text string, delimeter string) []string {
 	return result
 }
 
-func (u *Utils) YoutubeEmbed(str string) string {
+func YoutubeEmbed(str string) string {
 	if strings.Contains(str, "youtube.com/watch?v=") {
 		str = strings.Replace(str, "youtube.com/watch?v=", "youtube.com/embed/", 1)
 	} else if strings.Contains(str, "youtu.be/") {
@@ -124,7 +123,7 @@ func (u *Utils) YoutubeEmbed(str string) string {
 }
 
 
-func (u *Utils) Format(str string) string {
+func Format(str string) string {
 	reg := regexp.MustCompile(`(?m)<div[^<>]*><a[^<>]*>More items...</a></div>`)
 	str = reg.ReplaceAllString(str, ``)
 
@@ -137,9 +136,9 @@ func (u *Utils) Format(str string) string {
 	reg = regexp.MustCompile(`(?m)<span[^<>]*>[JFMASOND][a-z]{2}\s\d{1,2},\s\d{4}</span>`)
 	str = reg.ReplaceAllString(str, ``)
 
-	headingMatch := UTILS.PregMatch(`(?m)<div[^<>]*role="heading"><b>(?P<title>.+)</b></div>`, str)
+	headingMatch := PregMatch(`(?m)<div[^<>]*role="heading"><b>(?P<title>.+)</b></div>`, str)
 	heading := headingMatch["title"]
-	heading = UTILS.StripTags(heading)
+	heading = StripTags(heading)
 
 	str, _ = sanitize.HTMLAllowing(str, []string{
 		"table", "thead", "tbody", "tr", "td", "th",
@@ -154,7 +153,7 @@ func (u *Utils) Format(str string) string {
 	return str
 }
 
-func (u *Utils) StripTags(html string) string {
+func StripTags(html string) string {
 	paaReader := strings.NewReader(html)
 	doc, err := goquery.NewDocumentFromReader(paaReader)
 	if err != nil {
@@ -164,11 +163,11 @@ func (u *Utils) StripTags(html string) string {
 	return doc.Text()
 }
 
-func (u *Utils) RandBool() bool {
+func RandBool() bool {
 	return rand.Float32() < 0.5
 }
 
-func (u *Utils) ParseFormCollection(r *http.Request, typeName string) map[string]string {
+func ParseFormCollection(r *http.Request, typeName string) map[string]string {
 	result := make(map[string]string)
 	if err := r.ParseForm(); err != nil {
 		log.Println("Utils.ParseFormCollection.HasError", err)
@@ -184,7 +183,7 @@ func (u *Utils) ParseFormCollection(r *http.Request, typeName string) map[string
 	return result
 }
 
-func (u *Utils) toInt(value string) int {
+func ToInt(value string) int {
 	var integer int = 0
 	if value != "" {
 		integer, _ = strconv.Atoi(value)
@@ -192,7 +191,7 @@ func (u *Utils) toInt(value string) int {
 	return integer
 }
 
-func (u *Utils) PregMatch(regEx, url string) (paramsMap map[string]string) {
+func PregMatch(regEx, url string) (paramsMap map[string]string) {
 	var compRegEx = regexp.MustCompile(regEx)
 	match := compRegEx.FindStringSubmatch(url)
 

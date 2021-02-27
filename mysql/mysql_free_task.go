@@ -52,7 +52,14 @@ type FreeTask struct {
 	db *Instance
 }
 
+func ArrayRand(arr []string) string {
+	rand.Seed(time.Now().UnixNano())
+	n := rand.Int() % len(arr)
+	return strings.Trim(arr[n], " ")
+}
+
 func (t *FreeTask) MergeTask(task Task) {
+	fmt.Println(task.Id)
 	t.Id = int(task.Id.Int64)
 	t.Keyword = task.Keyword.String
 	t.CatId = int(task.CatId.Int64)
@@ -93,11 +100,8 @@ func (t *FreeTask) MergeSite(site Site){
 
 	var extra map[string]interface{}
 	_ = json.Unmarshal([]byte(site.Extra.String), &extra)
-	if v, ok := extra["deep_paa"] ; ok {
-		t.Extra.DeepPaa = v.(bool)
-	}
-	if v, ok := extra["redirect_method"] ; ok {
-		t.Extra.RedirectMethod = v.(bool)
+	if v, ok := extra["adjacent_keys"] ; ok {
+		t.Extra.AdjacentKeys = v.(bool)
 	}
 	if v, ok := extra["count_streams"] ; ok {
 		t.Extra.CountStreams = v.(int)
@@ -292,13 +296,14 @@ func (m *Instance) GetFreeTask(id int) FreeTask {
 		}
 	}
 
+
 	if siteId > 0 {
 		freeTask.MergeSite(site)
 
 		t := time.Now()
 		now := t.Format("2006-01-02 15:04:05")
 
-		randomOffset := int(siteCountTasks) - 1
+		randomOffset := int(siteCountTasks)
 		if randomOffset < 1 {
 			return freeTask
 		}

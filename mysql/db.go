@@ -2,14 +2,11 @@ package mysql
 
 import (
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"log"
 	"os/exec"
 	"time"
-)
-
-var (
-	DB *sqlx.DB
 )
 
 type Instance struct {

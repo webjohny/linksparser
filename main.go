@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"linksparser/config"
 	//"os"
 	//"time"
@@ -9,7 +10,6 @@ import (
 )
 
 var (
-	UTILS   Utils
 	MYSQL   mysql.Instance
 	CONF    config.Configuration
 	//STREAMS Streams
@@ -24,20 +24,28 @@ func main() {
 	MYSQL = mysql.CreateConnection(CONF.MysqlHost, CONF.MysqlDb, CONF.MysqlLogin, CONF.MysqlPass)
 
 	// Run routes
-
+	//log.Fatal(MYSQL.GetFreeTask(0))
+	job := JobHandler{}
+	job.IsStart = true
+	if job.Browser.Init() {
+		fmt.Println(job.Run(2))
+		//job.Run(1)
+		//job.Run(1)
+	}
 	//if CONF.Env == "local" {
-		//task := MYSQL.GetFreeTask(564805)
-		//task.SetTimeout(2)
-
-		//go func() {
-			//job := JobHandler{}
-			//job.IsStart = true
-			//if job.Browser.Init() {
-				//job.Run(2)
-				//job.Run(1)
-				//job.Run(1)
-			//}
-		//}()
+	//	task := MYSQL.GetFreeTask(564805)
+	//	task.SetTimeout(2)
+	//
+	//	go func() {
+	//		job := JobHandler{}
+	//		job.IsStart = true
+	//		if job.Browser.Init() {
+	//			job.Run(2)
+	//			//job.Run(1)
+	//			//job.Run(1)
+	//		}
+	//	}()
+	//}
 
 		//time.Sleep(100)
 

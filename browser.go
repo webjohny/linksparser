@@ -11,6 +11,7 @@ import (
 	"github.com/chromedp/cdproto/performance"
 	"github.com/chromedp/cdproto/security"
 	"github.com/webjohny/chromedp"
+	"linksparser/services"
 	"log"
 	"strings"
 	"time"
@@ -121,12 +122,12 @@ func (b *Browser) checkProxy(proxy *Proxy) bool {
 
 	var searchHtml string
 
-	fmt.Println(UTILS.ArrayRand(keyWords))
+	fmt.Println(services.ArrayRand(keyWords))
 	if err := chromedp.Run(taskCtx,
 		b.setProxyToContext(proxy),
 		b.runWithTimeOut(10, false, chromedp.Tasks{
 			// Устанавливаем страницу для парсинга
-			chromedp.Navigate("https://www.google.com/search?q=" + UTILS.ArrayRand(keyWords)),
+			chromedp.Navigate("https://www.google.com/search?q=" + services.ArrayRand(keyWords)),
 			//chromedp.Navigate("https://deelay.me/23545/google.com"),
 			chromedp.WaitVisible("body",chromedp.ByQuery),
 			chromedp.OuterHTML("body", &searchHtml, chromedp.ByQuery),

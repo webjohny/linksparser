@@ -20,7 +20,7 @@ func ShuffleSites(sites []Site) []Site {
 }
 
 func (m *Instance) CountWorkingTasks() int {
-	rows, _ := DB.Query("SELECT COUNT(*) as count FROM `tasks` WHERE `timeout` IS NOT NULL AND `parser` IS NOT NULL")
+	rows, _ := m.db.Query("SELECT COUNT(*) as count FROM `tasks` WHERE `timeout` IS NOT NULL AND `parser` IS NOT NULL")
 	var count int
 	for rows.Next() {
 		err := rows.Scan(&count)
@@ -35,7 +35,7 @@ func (m *Instance) GetTaskByKeyword(k string) Task {
 	var result Task
 	sqlQuery := "SELECT * FROM `tasks` WHERE `keyword` = ? LIMIT 1"
 
-	err := DB.Get(&result, sqlQuery, k)
+	err := m.db.Get(&result, sqlQuery, k)
 	if err != nil {
 		//log.Println("MysqlDb.GetTaskByKeyword.HasError", err)
 	}
@@ -44,7 +44,7 @@ func (m *Instance) GetTaskByKeyword(k string) Task {
 }
 
 func (m *Instance) GetCountTasks(params map[string]interface{}) int {
-	rows, _ := DB.Query("SELECT COUNT(*) as count FROM `tasks`")
+	rows, _ := m.db.Query("SELECT COUNT(*) as count FROM `tasks`")
 	var count int
 	for rows.Next() {
 		err := rows.Scan(&count)
@@ -78,7 +78,7 @@ func (m *Instance) GetTasks(params map[string]interface{}) []Task {
 		}
 	}
 
-	err := DB.Select(&results, sqlQuery)
+	err := m.db.Select(&results, sqlQuery)
 	if err != nil {
 		log.Println("MysqlDb.GetTasks.HasError", err)
 	}
@@ -110,7 +110,7 @@ func (m *Instance) UpdateTask(data map[string]interface{}, id int) (sql.Result, 
 
 	sqlQuery += " WHERE `id` = " + strconv.Itoa(id)
 
-	res, err := DB.NamedExec(sqlQuery, data)
+	res, err := m.db.NamedExec(sqlQuery, data)
 
 	return res, err
 }
@@ -124,7 +124,7 @@ func (m *Instance) AddTask(item map[string]interface{}) (sql.Result, error) {
 		"`parser` = NULL, " +
 		"`error` = NULL"
 
-	res, err := DB.NamedExec(sqlQuery, item)
+	res, err := m.db.NamedExec(sqlQuery, item)
 
 	return res, err
 }
