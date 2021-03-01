@@ -5,13 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"io/ioutil"
 	"linksparser/mysql"
 	"linksparser/services"
 	"log"
 	"math/rand"
-	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -87,7 +86,7 @@ type SimilarWebResp struct {
 	Category string `json:"Category"`
 	CategoryRank CategoryRank `json:"CategoryRank"`
 	LargeScreenshot string `json:"LargeScreenshot"`
-	EstimatedMonthlyVisits map[string]int32 `json:"EstimatedMonthlyVisits"`
+	EstimatedMonthlyVisits map[string]int `json:"EstimatedMonthlyVisits"`
 	Description string `json:"Description"`
 	TopCountryShares []TopCountryShare `json:"Description"`
 	GlobalRank GlobalRank `json:"GlobalRank"`
@@ -225,6 +224,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	})
 
 	task.SetLog("Обработка похожих запросов")
+
 	var searchesRelated []string
 	if body.Find(".k8XOCe").Length() > 0 {
 		body.Find(".k8XOCe").Each(func(i int, k8XOCe *goquery.Selection) {
@@ -233,14 +233,20 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	}
 
 	task.SetLog("Извлечение информации по ссылкам из API Data.Similarweb.com")
+
+	var results []SimilarWebResp
+
 	for i := 0; i < len(linkResults); i++ {
 		link := linkResults[i]
 
 		res, err := j.ExtractSimilarWebData(link.Link)
 		if err != nil {
 			log.Fatal(err)
+		}else if res != nil {
+			results = append(results, *res)
 		}
-		fmt.Println(res)
+
+		time.Sleep(time.Second * time.Duration(rand.Intn(5)))
 	}
 
 	fmt.Println(linkResults)
@@ -297,41 +303,31 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 }
 
 func (j *JobHandler) ExtractSimilarWebData(link string) (*SimilarWebResp, error) {
-	spaceClient := http.Client{
-		Timeout: time.Second * 2, // Timeout after 2 seconds
-	}
+	var jsonResp string
 
-	req, err := http.NewRequest(http.MethodGet, "https://data.similarweb.com/api/v1/data?domain=" + url.QueryEscape(link), nil)
-	if err != nil {
-		fmt.Println("ERR.ExtractSimilarWebData")
+	dswUrl := "https://data.similarweb.com/api/v1/data?domain=" + url.QueryEscape(link)
+	if err := chromedp.Run(j.Browser.ctx,
+		// Устанавливаем страницу для парсинга
+		//chromedp.Sleep(time.Second * 60),
+		j.Browser.runWithTimeOut(20, false, chromedp.Tasks{
+			chromedp.Navigate(dswUrl),
+			chromedp.WaitVisible("body", chromedp.ByQuery),
+			// Вытащить html на проверку каптчи
+			chromedp.InnerHTML("body", &jsonResp, chromedp.ByQuery),
+		}),
+	); err != nil {
+		log.Println("ExtractSimilarWebData.Run.HasError", err)
 		return nil, err
 	}
 
-	uagent := MYSQL.GetAgent()
-	if uagent != nil {
-		req.Header.Set("User-Agent", uagent.Sign.String)
-	}else{
-		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Safari/537.36/9uiP7EnX-09")
-	}
-
-	res, err := spaceClient.Do(req)
-	if err != nil {
-		fmt.Println("ERR.ExtractSimilarWebData.1")
-		return nil, err
-	}
-
-	if res.Body != nil {
-		defer res.Body.Close()
-	}
-
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println("ERR.ExtractSimilarWebData.2")
-		return nil, err
+	var re = regexp.MustCompile(`(?m)^(.*?)\{(.*)\}.*`)
+	jsonResp = re.ReplaceAllString(jsonResp, "{$2}")
+	if jsonResp == "{}" {
+		return nil, nil
 	}
 
 	var obj SimilarWebResp
-	err = json.Unmarshal(body, &obj)
+	err := json.Unmarshal([]byte(jsonResp), &obj)
 	if err != nil {
 		fmt.Println("ERR.ExtractSimilarWebData.3")
 		return nil, err

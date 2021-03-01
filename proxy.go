@@ -19,6 +19,7 @@ type Proxy struct {
 
 	Ip string
 	LocalIp string
+	FullIp string
 	Log []string
 }
 
@@ -33,6 +34,7 @@ func NewProxy() *Proxy {
 		instance.Password = proxy.Password.String
 		instance.Agent = proxy.Agent.String
 		instance.LocalIp = instance.Host + ":" + instance.Port
+		instance.FullIp = "http://" + instance.Login + ":" + instance.Password + "@" + instance.Host + ":" + instance.Port
 
 		return instance
 	}
