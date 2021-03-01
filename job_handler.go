@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"io/ioutil"
 	"linksparser/mysql"
 	"linksparser/services"
 	"log"
 	"math/rand"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -48,6 +51,49 @@ type LinkResult struct {
 	PageViews int64
 	CountryCode string
 	CountryName string
+}
+
+type TopCountryShare struct {
+	Value float64 `json:"Value"`
+	Country int32 `json:"Country"`
+}
+
+type GlobalRank struct {
+	Rank int32 `json:"Rank"`
+}
+
+type CountryRank struct {
+	Country int32 `json:"Country"`
+	Rank int32 `json:"Rank"`
+}
+
+type CategoryRank struct {
+	Category string `json:"Category"`
+	Rank string `json:"Rank"`
+}
+
+type TrafficSources struct {
+	Social float64 `json:"Social"`
+	PaidReferrals float64 `json:"Paid Referrals"`
+	Mail float64 `json:"Mail"`
+	Referrals float64 `json:"Referrals"`
+	Search float64 `json:"Search"`
+	Direct float64 `json:"Direct"`
+}
+
+type SimilarWebResp struct {
+	SiteName string `json:"SiteName"`
+	Title string `json:"Title"`
+	Category string `json:"Category"`
+	CategoryRank CategoryRank `json:"CategoryRank"`
+	LargeScreenshot string `json:"LargeScreenshot"`
+	EstimatedMonthlyVisits map[string]int32 `json:"EstimatedMonthlyVisits"`
+	Description string `json:"Description"`
+	TopCountryShares []TopCountryShare `json:"Description"`
+	GlobalRank GlobalRank `json:"GlobalRank"`
+	CountryRank CountryRank `json:"CountryRank"`
+	IsSmall bool `json:"IsSmall"`
+	TrafficSources TrafficSources `json:"TrafficSources"`
 }
 
 func (j *JobHandler) Run(parser int) (status bool, msg string) {
@@ -153,13 +199,15 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		return
 	}
 
-	task.SetLog("Блоки загружены")
+	task.SetLog("Контент загружен")
 
 	htmlReader := strings.NewReader(searchHtml)
 	body, err := goquery.NewDocumentFromReader(htmlReader)
 	if err != nil {
 		log.Println("JobHandler.SetFastAnswer.HasError", err)
 	}
+
+	task.SetLog("Парсинг ссылок из выдачи")
 
 	var linkResults []LinkResult
 	body.Find(".hlcw0c").Each(func(i int, hlcw0c *goquery.Selection) {
@@ -176,11 +224,23 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		})
 	})
 
+	task.SetLog("Обработка похожих запросов")
 	var searchesRelated []string
 	if body.Find(".k8XOCe").Length() > 0 {
 		body.Find(".k8XOCe").Each(func(i int, k8XOCe *goquery.Selection) {
 			searchesRelated = append(searchesRelated, k8XOCe.Text())
 		})
+	}
+
+	task.SetLog("Извлечение информации по ссылкам из API Data.Similarweb.com")
+	for i := 0; i < len(linkResults); i++ {
+		link := linkResults[i]
+
+		res, err := j.ExtractSimilarWebData(link.Link)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(res)
 	}
 
 	fmt.Println(linkResults)
@@ -234,6 +294,50 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	fmt.Println(taskId)
 	go j.Cancel()
 	return true, "Задача #" + strconv.Itoa(taskId) + " была успешно выполнена"
+}
+
+func (j *JobHandler) ExtractSimilarWebData(link string) (*SimilarWebResp, error) {
+	spaceClient := http.Client{
+		Timeout: time.Second * 2, // Timeout after 2 seconds
+	}
+
+	req, err := http.NewRequest(http.MethodGet, "https://data.similarweb.com/api/v1/data?domain=" + url.QueryEscape(link), nil)
+	if err != nil {
+		fmt.Println("ERR.ExtractSimilarWebData")
+		return nil, err
+	}
+
+	uagent := MYSQL.GetAgent()
+	if uagent != nil {
+		req.Header.Set("User-Agent", uagent.Sign.String)
+	}else{
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Safari/537.36/9uiP7EnX-09")
+	}
+
+	res, err := spaceClient.Do(req)
+	if err != nil {
+		fmt.Println("ERR.ExtractSimilarWebData.1")
+		return nil, err
+	}
+
+	if res.Body != nil {
+		defer res.Body.Close()
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println("ERR.ExtractSimilarWebData.2")
+		return nil, err
+	}
+
+	var obj SimilarWebResp
+	err = json.Unmarshal(body, &obj)
+	if err != nil {
+		fmt.Println("ERR.ExtractSimilarWebData.3")
+		return nil, err
+	}
+
+	return &obj, nil
 }
 
 func (j *JobHandler) CheckFinished() bool {

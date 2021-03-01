@@ -25,6 +25,7 @@ func main() {
 
 	// Run routes
 	//log.Fatal(MYSQL.GetFreeTask(0))
+
 	job := JobHandler{}
 	job.IsStart = true
 	if job.Browser.Init() {
