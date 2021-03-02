@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/emulation"
@@ -129,7 +130,7 @@ func (b *Browser) checkProxy(proxy *Proxy) bool {
 			// Устанавливаем страницу для парсинга
 			chromedp.Navigate("https://www.google.com/search?q=" + services.ArrayRand(keyWords)),
 			//chromedp.Navigate("https://deelay.me/23545/google.com"),
-			chromedp.WaitVisible("body",chromedp.ByQuery),
+			chromedp.WaitVisible("body", chromedp.ByQuery),
 			chromedp.OuterHTML("body", &searchHtml, chromedp.ByQuery),
 		}),
 	); err != nil {
@@ -236,15 +237,15 @@ func (b *Browser) ChangeTab() {
 
 }
 
-func (b *Browser) ScreenShot(url string) (bool, []byte) {
-
+func (b *Browser) ScreenShot(url string) (*[]byte, error) {
 	if url == "" {
-		return false, []byte("undefined url")
+		return nil, errors.New("undefined url")
 	}
 
 	var buf []byte
 	if err := chromedp.Run(b.ctx,
 		chromedp.Navigate(url),
+		chromedp.WaitVisible("body", chromedp.ByQuery),
 		chromedp.ActionFunc(func(ctxt context.Context) error {
 			_, viewLayout, contentRect, err := page.GetLayoutMetrics().Do(ctxt)
 			if err != nil {
@@ -267,12 +268,12 @@ func (b *Browser) ScreenShot(url string) (bool, []byte) {
 		}),
 	); err != nil {
 		log.Println("Browser.ScreenShotSave.HasError", err)
-		return false, []byte(err.Error())
+		return nil, err
 	}
 
-	if len(buf) < 1 {
-		return false, []byte("undefined image")
+	if buf != nil && len(buf) < 1 {
+		return nil, errors.New("undefined image")
 	}
 
-	return true, buf
+	return &buf, nil
 }

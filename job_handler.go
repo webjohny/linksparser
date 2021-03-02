@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"io/ioutil"
 	"linksparser/mysql"
 	"linksparser/services"
 	"log"
@@ -235,18 +236,26 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	task.SetLog("Извлечение информации по ссылкам из API Data.Similarweb.com")
 
 	var results []SimilarWebResp
-
 	for i := 0; i < len(linkResults); i++ {
-		link := linkResults[i]
-
-		res, err := j.ExtractSimilarWebData(link.Link)
+		res := linkResults[i]
+		dsw, err := j.ExtractSimilarWebData(res.Link)
 		if err != nil {
-			log.Fatal(err)
-		}else if res != nil {
-			results = append(results, *res)
+			task.SetLog("Ошибка загрузки на ресурсе: " + res.Link)
+			continue
 		}
 
-		time.Sleep(time.Second * time.Duration(rand.Intn(5)))
+		if dsw != nil {
+			buf, err := j.Browser.ScreenShot(res.Link)
+			if err != nil {
+				fmt.Println("ERR.JobHandler.Run.Screenshot", err)
+			}
+			err = ioutil.WriteFile("./" + strconv.Itoa(task.Id) + "-" + strconv.Itoa(i) + ".jpg", *buf, 0644)
+			if err != nil {
+				fmt.Println("ERR.JobHandler.Run.Screenshot.2", err)
+			}
+			results = append(results, *dsw)
+		}
+		time.Sleep(time.Second * time.Duration(rand.Intn(15)+3))
 	}
 
 	fmt.Println(linkResults)

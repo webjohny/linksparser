@@ -2,12 +2,9 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"linksparser/config"
 	"log"
-	"math/rand"
-	"strconv"
-	"time"
-
 	//"os"
 	//"time"
 	"linksparser/mysql"
@@ -87,15 +84,21 @@ func main() {
 	var results []SimilarWebResp
 	for i := 0; i < len(links); i++ {
 		link := links[i]
-		dsw, err := job.ExtractSimilarWebData(link)
+		buf, err := job.Browser.ScreenShot(link)
 		if err != nil {
-			fmt.Println("Iteration #" + strconv.Itoa(i), err)
-			continue
+			fmt.Println("ERR.JobHandler.Run.Screenshot", err)
 		}
-		if dsw != nil {
-			results = append(results, *dsw)
-			time.Sleep(time.Second * time.Duration(rand.Intn(20)+3))
-		}
+
+
+		//dsw, err := job.ExtractSimilarWebData(link)
+		//if err != nil {
+		//	fmt.Println("Iteration #" + strconv.Itoa(i), err)
+		//	continue
+		//}
+		//if dsw != nil {
+		//	results = append(results, *dsw)
+		//	time.Sleep(time.Second * time.Duration(rand.Intn(20)+3))
+		//}
 	}
 	log.Println(len(results))
 	log.Fatal(results)
