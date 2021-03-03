@@ -33,10 +33,12 @@ type JobHandler struct {
 	isFinished chan bool
 }
 
-type Result struct {
-	Url string
+type WpPost struct {
 	Title string
 	Content string
+	Url string
+	AskedBy string
+	Text string
 	CatId int
 	PhotoId int
 }
@@ -258,6 +260,10 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		time.Sleep(time.Second * time.Duration(rand.Intn(15)+3))
 	}
 
+	var WpPost WpPost
+	WpPost.Title = task.Keyword
+	WpPost.Content = "Looking for " + WpPost.Title + "? Get direct access to " + WpPost.Title + " through official links provided below."
+
 	fmt.Println(linkResults)
 	fmt.Println(searchesRelated)
 	task.FreeTask()
@@ -270,7 +276,6 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	}
 
 	if task.ParseSearch4 < 1 {
-		var qaTotalPage Result
 		wp := services.Wordpress{}
 		wp.Connect(`https://` + task.Domain + `/xmlrpc2.php`, task.Login, task.Password, 1)
 		if !wp.CheckConn() {
