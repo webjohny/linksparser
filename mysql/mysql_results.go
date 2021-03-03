@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"database/sql"
+	"encoding/json"
 	"time"
 )
 
@@ -21,25 +22,22 @@ func (m *Instance) AddResult(item map[string]interface{}) (sql.Result, error) {
 	t := time.Now()
 	now := t.Format("2006-01-02 15:04:05")
 
-	if _, ok := item["create_date"]; !ok {
-		item["create_date"] = now
+	if _, ok := item["created_at"]; !ok {
+		item["created_at"] = now
 	}
 
-	if _, ok := item["qa_date"]; !ok {
-		item["qa_date"] = now
-	}
+	item["links"], _ = json.Marshal(item["links"])
 
 	sqlQuery := "INSERT INTO `results` SET "
-	sqlQuery += "`task_id` = :task_id, " +
-		"`link_title` = :link_title, " +
+	sqlQuery += "`keyword` = :keyword, " +
+		"`links` = :links, " +
 		"`site_id` = :site_id, " +
 		"`cat_id` = :cat_id, " +
 		"`domain` = :domain, " +
-		"`cat` = :cat, " +
-		"`q` = :q, " +
-		"`link` = :link, " +
-		"`create_date` = :create_date, " +
-		"`qa_date` = :qa_date"
+		"`text` = :text, " +
+		"`content` = :content, " +
+		"`author` = :author, " +
+		"`created_at` = :created_at"
 
 	res, err := m.db.NamedExec(sqlQuery, item)
 

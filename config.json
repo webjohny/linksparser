@@ -8,5 +8,6 @@
   "MysqlHost": "localhost:3306",
   "MysqlDb": "linksparser_db",
   "MysqlLogin": "root",
-  "MysqlPass": ""
+  "MysqlPass": "",
+  "ImgPath": "./images"
 }

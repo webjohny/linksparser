@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bxcodec/faker"
+	"io/ioutil"
 	"linksparser/mysql"
 	"linksparser/services"
 	"log"
@@ -39,8 +40,9 @@ type WpPost struct {
 	Url string
 	AskedBy string
 	Text string
+	Links []*LinkResult
 	CatId int
-	PhotoId int
+	Image string
 }
 
 type LinkResult struct {
@@ -221,7 +223,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 
 	task.SetLog("Парсинг ссылок из выдачи")
 
-	var linkResults []*LinkResult
+	var wpPost WpPost
 	body.Find(".hlcw0c").Each(func(i int, hlcw0c *goquery.Selection) {
 		hlcw0c.Find(".g").Each(func(y int, g *goquery.Selection) {
 			var res LinkResult
@@ -232,7 +234,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 				res.Link = href
 			}
 
-			linkResults = append(linkResults, &res)
+			wpPost.Links = append(wpPost.Links, &res)
 		})
 	})
 
@@ -247,8 +249,8 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 
 	task.SetLog("Извлечение информации по ссылкам из API Data.Similarweb.com")
 
-	for i := 0; i < len(linkResults); i++ {
-		res := linkResults[i]
+	for i := 0; i < len(wpPost.Links); i++ {
+		res := wpPost.Links[i]
 		dsw, err := j.ExtractSimilarWebData(res.Link)
 		if err != nil {
 			task.SetLog("Ошибка загрузки на ресурсе: " + res.Link)
@@ -260,6 +262,10 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 			if err != nil {
 				fmt.Println("ERR.JobHandler.Run.Screenshot", err)
 			}
+			err = ioutil.WriteFile(CONF.ImgPath + "/" + strconv.Itoa(task.Id) + "-" + strconv.Itoa(i) + ".jpg", *buf, 0644)
+			if err != nil {
+				fmt.Println("ERR.JobHandler.Run.Screenshot.2", err)
+			}
 			res.Image = *buf
 			res.GlobalRank = dsw.GlobalRank.Rank
 			res.PageViews = dsw.Engagments.Visits
@@ -270,11 +276,30 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		time.Sleep(time.Second * time.Duration(rand.Intn(15)+3))
 	}
 
-	var WpPost WpPost
-	WpPost.Title = task.Keyword
-	WpPost.Content = "Looking for " + WpPost.Title + "? Get direct access to " + WpPost.Title + " through official links provided below."
+	wpPost.Title = task.Keyword
+	wpPost.Content = "Looking for " + wpPost.Title + "? Get direct access to " + wpPost.Title + " through official links provided below."
+	wpPost.AskedBy = faker.FirstName() + " " + faker.LastName()
+	wpPost.Text = "Follow these easy steps: " +
+		"<ul>" +
+		"<li><strong>Step 1.</strong> Go to " + wpPost.Title + " page via official link below.</li>" +
+		"<li><strong>Step 2.</strong> Login using your username and password. Login screen appears upon successful login.</li>" +
+		"<li><strong>Step 3.</strong> If you still can't access " + wpPost.Title + " then see <a href='#'>Troubleshooting options here</a>.</li>" +
+		"</ul>"
 
-	fmt.Println(linkResults)
+
+	_, err =  MYSQL.AddResult(map[string]interface{}{
+		"keyword": wpPost.Title,
+		"author": wpPost.AskedBy,
+		"links": wpPost.Links,
+		"text": wpPost.Text,
+		"content": wpPost.Content,
+	})
+	if err != nil {
+		fmt.Println("ERR.JobHandler.Run")
+	}
+	
+
+	fmt.Println(wpPost.Links)
 	fmt.Println(searchesRelated)
 	task.FreeTask()
 	log.Fatal("STOP")
@@ -296,12 +321,12 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		}
 
 		// Отправляем заметку на сайт
-		postId := wp.NewPost(qaTotalPage.Title, qaTotalPage.Content, qaTotalPage.CatId, qaTotalPage.PhotoId)
+		postId := wp.NewPost(wpPost.Title, wpPost.Content, wpPost.CatId, 12)
 		var fault bool
 		if postId > 0 {
 			post := wp.GetPost(postId)
 			if post.Id > 0 {
-				wp.EditPost(postId, qaTotalPage.Title, qaTotalPage.Content)
+				wp.EditPost(postId, wpPost.Title, wpPost.Content)
 			}else{
 				fault = true
 			}

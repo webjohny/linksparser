@@ -16,6 +16,7 @@ type Configuration struct {
 	MysqlDb   string
 	MysqlLogin   string
 	MysqlPass   string
+	ImgPath   string
 }
 
 func (conf *Configuration) Create(filename string) {

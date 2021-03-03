@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"linksparser/config"
-	"log"
 	//"os"
 	//"time"
 	"linksparser/mysql"
@@ -13,7 +12,7 @@ import (
 var (
 	MYSQL   mysql.Instance
 	CONF    config.Configuration
-	//STREAMS Streams
+	STREAMS Streams
 )
 
 func main() {
@@ -72,20 +71,20 @@ func main() {
 	//	"https://finance.yahoo.com/quote/EXPI/",
 	//}
 
-	job := JobHandler{}
-	proxy := NewProxy()
-	if proxy == nil {
-		log.Fatal("Need free proxies")
-	}
-	job.IsStart = true
-	job.Browser.Init()
-	job.proxy = *proxy
-	job.IsStart = true
-	if job.Browser.Init() {
-		fmt.Println(job.Run(2))
+	//job := JobHandler{}
+	//proxy := NewProxy()
+	//if proxy == nil {
+	//	log.Fatal("Need free proxies")
+	//}
+	//job.IsStart = true
+	//job.Browser.Init()
+	//job.proxy = *proxy
+	//job.IsStart = true
+	//if job.Browser.Init() {
+	//	fmt.Println(job.Run(2))
 		//job.Run(1)
 		//job.Run(1)
-	}
+	//}
 	//if CONF.Env == "local" {
 	//	task := MYSQL.GetFreeTask(564805)
 	//	task.SetTimeout(2)
@@ -132,8 +131,9 @@ func main() {
 		//}
 	//}
 
-	//routes := Routes{}
-	//routes.Run()
+	fmt.Print("/get/task-stats")
+	routes := Routes{}
+	routes.Run()
 
 	//time.Sleep(time.Minute)
 }
