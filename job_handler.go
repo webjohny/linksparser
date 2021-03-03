@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"io/ioutil"
+	"github.com/bxcodec/faker"
 	"linksparser/mysql"
 	"linksparser/services"
 	"log"
@@ -45,12 +45,12 @@ type WpPost struct {
 
 type LinkResult struct {
 	Link string
-	Image string
+	Image []byte
 	Author string
 	Title string
 	Description string
-	GlobalRank int64
-	PageViews int64
+	GlobalRank int32
+	PageViews string
 	CountryCode string
 	CountryName string
 }
@@ -83,6 +83,15 @@ type TrafficSources struct {
 	Direct float64 `json:"Direct"`
 }
 
+type Engagments struct {
+	BounceRate string `json:"BounceRate"`
+	Month string `json:"Month"`
+	Year string `json:"Year"`
+	PagePerVisit string `json:"PagePerVisit"`
+	Visits string `json:"Visits"`
+	TimeOnSite string `json:"TimeOnSite"`
+}
+
 type SimilarWebResp struct {
 	SiteName string `json:"SiteName"`
 	Title string `json:"Title"`
@@ -96,6 +105,7 @@ type SimilarWebResp struct {
 	CountryRank CountryRank `json:"CountryRank"`
 	IsSmall bool `json:"IsSmall"`
 	TrafficSources TrafficSources `json:"TrafficSources"`
+	Engagments Engagments `json:"Engagments"`
 }
 
 func (j *JobHandler) Run(parser int) (status bool, msg string) {
@@ -211,7 +221,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 
 	task.SetLog("Парсинг ссылок из выдачи")
 
-	var linkResults []LinkResult
+	var linkResults []*LinkResult
 	body.Find(".hlcw0c").Each(func(i int, hlcw0c *goquery.Selection) {
 		hlcw0c.Find(".g").Each(func(y int, g *goquery.Selection) {
 			var res LinkResult
@@ -222,7 +232,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 				res.Link = href
 			}
 
-			linkResults = append(linkResults, res)
+			linkResults = append(linkResults, &res)
 		})
 	})
 
@@ -237,7 +247,6 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 
 	task.SetLog("Извлечение информации по ссылкам из API Data.Similarweb.com")
 
-	var results []SimilarWebResp
 	for i := 0; i < len(linkResults); i++ {
 		res := linkResults[i]
 		dsw, err := j.ExtractSimilarWebData(res.Link)
@@ -251,11 +260,12 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 			if err != nil {
 				fmt.Println("ERR.JobHandler.Run.Screenshot", err)
 			}
-			err = ioutil.WriteFile("./" + strconv.Itoa(task.Id) + "-" + strconv.Itoa(i) + ".jpg", *buf, 0644)
-			if err != nil {
-				fmt.Println("ERR.JobHandler.Run.Screenshot.2", err)
-			}
-			results = append(results, *dsw)
+			res.Image = *buf
+			res.GlobalRank = dsw.GlobalRank.Rank
+			res.PageViews = dsw.Engagments.Visits
+			res.Title = dsw.Title
+			res.Description = dsw.Description
+			res.Author = faker.FirstName() + " " + faker.LastName()
 		}
 		time.Sleep(time.Second * time.Duration(rand.Intn(15)+3))
 	}
