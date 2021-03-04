@@ -71,20 +71,20 @@ func main() {
 	//	"https://finance.yahoo.com/quote/EXPI/",
 	//}
 
-	//job := JobHandler{}
+	job := JobHandler{}
 	//proxy := NewProxy()
 	//if proxy == nil {
 	//	log.Fatal("Need free proxies")
 	//}
-	//job.IsStart = true
+	job.IsStart = true
 	//job.Browser.Init()
 	//job.proxy = *proxy
 	//job.IsStart = true
-	//if job.Browser.Init() {
-	//	fmt.Println(job.Run(2))
+	if job.Browser.Init() {
+		fmt.Println(job.Run(2))
 		//job.Run(1)
 		//job.Run(1)
-	//}
+	}
 	//if CONF.Env == "local" {
 	//	task := MYSQL.GetFreeTask(564805)
 	//	task.SetTimeout(2)
@@ -131,7 +131,6 @@ func main() {
 		//}
 	//}
 
-	fmt.Print("/get/task-stats")
 	routes := Routes{}
 	routes.Run()
 

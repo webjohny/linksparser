@@ -297,6 +297,28 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	if err != nil {
 		fmt.Println("ERR.JobHandler.Run")
 	}
+	wp := services.Wordpress{}
+	wp.Connect(`http://` + task.Domain + `/xmlrpc.php`, task.Login, task.Password, 1)
+	if !wp.CheckConn() {
+		task.SetLog("Не получилось подключится к wp xmlrpc (https://" + task.Domain + "/xmlrpc2.php - " + task.Login + " / " + task.Password + ")")
+		task.SetError(wp.GetError().Error())
+		go j.Cancel()
+		return false, "Не получилось подключится к wp xmlrpc (https://" + task.Domain + "/xmlrpc2.php - " + task.Login + " / " + task.Password + ")"
+	}
+
+	// Отправляем заметку на сайт
+	postId := wp.NewPost(wpPost.Title, wpPost.Content, wpPost.CatId, 12)
+	var fault bool
+	if postId > 0 {
+		post := wp.GetPost(postId)
+		if post.Id > 0 {
+			wp.EditPost(postId, wpPost.Title, wpPost.Content)
+		}else{
+			fault = true
+		}
+	}else{
+		fault = true
+	}
 	
 
 	fmt.Println(wpPost.Links)
@@ -311,28 +333,6 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	}
 
 	if task.ParseSearch4 < 1 {
-		wp := services.Wordpress{}
-		wp.Connect(`https://` + task.Domain + `/xmlrpc2.php`, task.Login, task.Password, 1)
-		if !wp.CheckConn() {
-			task.SetLog("Не получилось подключится к wp xmlrpc (https://" + task.Domain + "/xmlrpc2.php - " + task.Login + " / " + task.Password + ")")
-			task.SetError(wp.GetError().Error())
-			go j.Cancel()
-			return false, "Не получилось подключится к wp xmlrpc (https://" + task.Domain + "/xmlrpc2.php - " + task.Login + " / " + task.Password + ")"
-		}
-
-		// Отправляем заметку на сайт
-		postId := wp.NewPost(wpPost.Title, wpPost.Content, wpPost.CatId, 12)
-		var fault bool
-		if postId > 0 {
-			post := wp.GetPost(postId)
-			if post.Id > 0 {
-				wp.EditPost(postId, wpPost.Title, wpPost.Content)
-			}else{
-				fault = true
-			}
-		}else{
-			fault = true
-		}
 
 		if fault {
 			task.SetLog("Не получилось разместить статью на сайте")

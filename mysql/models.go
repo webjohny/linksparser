@@ -64,16 +64,17 @@ type Uagent struct {
 type Result struct {
 	Id sql.NullInt64 `db:"id" json:"id"`
 	TaskId sql.NullInt64 `db:"task_id" json:"task_id"`
-	Domain sql.NullString `db:"domain" json:"domain"`
-	Cat sql.NullString `db:"cat" json:"cat"`
 	CatId sql.NullInt64 `db:"cat_id" json:"cat_id"`
 	SiteId sql.NullInt64 `db:"site_id" json:"site_id"`
-	Q sql.NullString `db:"q" json:"q"`
-	A sql.NullString `db:"a" json:"a"`
-	Link sql.NullString `db:"link" json:"link"`
-	LinkTitle sql.NullString `db:"link_title" json:"link_title"`
-	CreateDate sql.NullString `db:"create_date" json:"create_date"`
-	QaDate sql.NullString `db:"qa_date" json:"qa_date"`
+	Keyword sql.NullString `db:"keyword" json:"keyword"`
+	Domain sql.NullString `db:"domain" json:"domain"`
+	Links sql.NullString `db:"links" json:"links"`
+	Author sql.NullString `db:"author" json:"author"`
+	Content sql.NullString `db:"content" json:"content"`
+	Text sql.NullString `db:"text" json:"text"`
+	CreatedAt sql.NullString `db:"created_at" json:"created_at"`
+	UpdatedAt sql.NullString `db:"updated_at" json:"updated_at"`
+	DeletedAt sql.NullString `db:"deleted_at" json:"deleted_at"`
 }
 
 type Task struct {
@@ -83,19 +84,17 @@ type Task struct {
 	ParentId sql.NullInt64 `db:"parent_id" json:"parent_id"`
 	SiteId sql.NullInt64 `db:"site_id" json:"site_id"`
 	CatId sql.NullInt64 `db:"cat_id" json:"cat_id"`
-	Keyword sql.NullString `db:"keyword" json:"keyword"`
 	Cat sql.NullString `db:"cat" json:"cat"`
+	Keyword sql.NullString `db:"keyword" json:"keyword"`
 	TryCount sql.NullInt32 `db:"try_count" json:"try_count"`
 	ErrorsCount sql.NullInt32 `db:"errors_count" json:"errors_count"`
 	Status sql.NullInt32 `db:"status" json:"status"`
 	Error sql.NullString `db:"error" json:"error"`
-	Parser sql.NullInt64 `db:"parser" json:"parser"`
+	Stream sql.NullInt64 `db:"stream" json:"stream"`
 	Timeout sql.NullString `db:"timeout" json:"timeout"`
-	FastA sql.NullString `db:"fast_a" json:"fast_a"`
-	FastLink sql.NullString `db:"fast_link" json:"fast_link"`
-	FastLinkTitle sql.NullString `db:"fast_link_title" json:"fast_link_title"`
-	FastDate sql.NullString `db:"fast_date" json:"fast_date"`
-	ParseDate sql.NullString `db:"parse_date" json:"parse_date"`
+	CreatedAt sql.NullString `db:"created_at" json:"created_at"`
+	UpdatedAt sql.NullString `db:"updated_at" json:"updated_at"`
+	DeletedAt sql.NullString `db:"deleted_at" json:"deleted_at"`
 }
 
 type Proxy struct {

@@ -173,7 +173,7 @@ func (t *FreeTask) SetTimeout(parser int) {
 	data := map[string]interface{}{}
 	data["log"] = strings.Join(t.Log, "\n")
 	data["log_last"] = lastLog
-	data["parser"] = strconv.Itoa(parser)
+	data["stream"] = strconv.Itoa(parser)
 	data["timeout"] = formattedDate
 
 	_, err := t.db.UpdateTask(data, t.Id)

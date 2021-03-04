@@ -44,13 +44,18 @@ func (m *Instance) GetTaskByKeyword(k string) Task {
 }
 
 func (m *Instance) GetCountTasks(params map[string]interface{}) int {
-	rows, _ := m.db.Query("SELECT COUNT(*) as count FROM `tasks`")
 	var count int
-	for rows.Next() {
-		err := rows.Scan(&count)
-		if err != nil {
-			log.Println("MysqlDb.GetCountTasks.HasError", err)
+	rows, err := m.db.Query("SELECT COUNT(*) as `count` FROM `tasks`")
+	fmt.Println(rows)
+	if err == nil {
+		for rows.Next() {
+			err := rows.Scan(&count)
+			if err != nil {
+				log.Println("MysqlDb.GetCountTasks.HasError", err)
+			}
 		}
+	} else {
+		fmt.Println("ERR.MysqlTasks.GetCountTasks", err)
 	}
 	return count
 }
