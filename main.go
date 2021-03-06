@@ -80,7 +80,8 @@ func main() {
 	//job.Browser.Init()
 	//job.proxy = *proxy
 	//job.IsStart = true
-	if job.Browser.Init() {
+	//if job.Browser.Init() {
+	if false {
 		fmt.Println(job.Run(2))
 		//job.Run(1)
 		//job.Run(1)
