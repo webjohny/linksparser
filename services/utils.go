@@ -1,8 +1,11 @@
 package services
 
 import (
+	"encoding/xml"
+	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/kennygrant/sanitize"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -13,6 +16,65 @@ import (
 	"sync"
 	"time"
 )
+
+type CountryList struct{
+	XMLName xml.Name `xml:"country-list"`
+	Header struct{
+		Name string `xml:"name"`
+		FullName string `xml:"fullname"`
+		English string `xml:"english"`
+		Alpha2 string `xml:"alpha2"`
+		Alpha3 string `xml:"alpha3"`
+		Iso string `xml:"iso"`
+		Location string `xml:"location"`
+		LocationPrecise string `xml:"location-precise"`
+	} `xml:"header"`
+	Country []struct{
+		Name string `xml:"name"`
+		FullName string `xml:"fullname"`
+		English string `xml:"english"`
+		Alpha2 string `xml:"alpha2"`
+		Alpha3 string `xml:"alpha3"`
+		Iso string `xml:"iso"`
+		Location string `xml:"location"`
+		LocationPrecise string `xml:"location-precise"`
+	} `xml:"country"`
+}
+
+func GetCountryList () (*CountryList, error) {
+	var result *CountryList
+
+	if xmlBytes, err := GetXML("https://www.artlebedev.ru/country-list/xml"); err != nil {
+		log.Printf("Failed to get XML: %v", err)
+		return nil, err
+	} else {
+		err = xml.Unmarshal(xmlBytes, &result)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return result, nil
+}
+
+func GetXML(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return []byte{}, fmt.Errorf("GET error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return []byte{}, fmt.Errorf("Status error: %v", resp.StatusCode)
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return []byte{}, fmt.Errorf("Read body: %v", err)
+	}
+
+	return data, nil
+}
 
 func IsNil(i interface{}) bool {
 	return i == nil || reflect.ValueOf(i).IsNil()

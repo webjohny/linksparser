@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bxcodec/faker"
 	"io/ioutil"
 	"linksparser/mysql"
 	"linksparser/services"
+	"linksparser/tmpl"
 	"log"
 	"math/rand"
 	"net/url"
@@ -32,29 +34,6 @@ type JobHandler struct {
 	Browser Browser
 	ctx context.Context
 	isFinished chan bool
-}
-
-type WpPost struct {
-	Title string
-	Content string
-	Url string
-	AskedBy string
-	Text string
-	Links []*LinkResult
-	CatId int
-	Image string
-}
-
-type LinkResult struct {
-	Link string
-	Image []byte
-	Author string
-	Title string
-	Description string
-	GlobalRank int32
-	PageViews string
-	CountryCode string
-	CountryName string
 }
 
 type TopCountryShare struct {
@@ -223,10 +202,10 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 
 	task.SetLog("Парсинг ссылок из выдачи")
 
-	var wpPost WpPost
+	var wpPost tmpl.WpPost
 	body.Find(".hlcw0c").Each(func(i int, hlcw0c *goquery.Selection) {
 		hlcw0c.Find(".g").Each(func(y int, g *goquery.Selection) {
-			var res LinkResult
+			var res tmpl.LinkResult
 			res.Title = g.Find("h3").Text()
 			linkSel := g.Find(".yuRUbf").Find("a")
 			if linkSel != nil {
@@ -279,13 +258,22 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	wpPost.Title = task.Keyword
 	wpPost.Content = "Looking for " + wpPost.Title + "? Get direct access to " + wpPost.Title + " through official links provided below."
 	wpPost.AskedBy = faker.FirstName() + " " + faker.LastName()
-	wpPost.Text = "Follow these easy steps: " +
+	wpPost.Text = "<p>Follow these easy steps: </p>" +
 		"<ul>" +
 		"<li><strong>Step 1.</strong> Go to " + wpPost.Title + " page via official link below.</li>" +
 		"<li><strong>Step 2.</strong> Login using your username and password. Login screen appears upon successful login.</li>" +
 		"<li><strong>Step 3.</strong> If you still can't access " + wpPost.Title + " then see <a href='#'>Troubleshooting options here</a>.</li>" +
 		"</ul>"
 
+	rendered := tmpl.CreateWpPostTmpl(wpPost)
+	fmt.Print(rendered != "")
+	if xmlBytes, err := services.GetXML("http://somehost.com/some.xml"); err != nil {
+		log.Printf("Failed to get XML: %v", err)
+	} else {
+		var result map[string]interface{}
+		xml.Unmarshal(xmlBytes, &result)
+		fmt.Print(result)
+	}
 
 	_, err =  MYSQL.AddResult(map[string]interface{}{
 		"keyword": wpPost.Title,
