@@ -46,7 +46,7 @@ func (p *Proxy) setTimeout(parser int, minutes int) sql.Result {
 	formattedDate := now.Format("2006-01-02 15:04:05")
 
 	data := map[string]interface{}{}
-	data["parser"] = strconv.Itoa(parser)
+	data["stream"] = strconv.Itoa(parser)
 	data["timeout"] = formattedDate
 
 	res, err := MYSQL.UpdateProxy(data, p.Id)
@@ -62,7 +62,7 @@ func (p *Proxy) freeProxy() {
 	formattedDate := now.Format("2006-01-02 15:04:05")
 
 	data := map[string]interface{}{}
-	data["parser"] = "NULL"
+	data["stream"] = "NULL"
 	data["timeout"] = formattedDate
 
 	_, err := MYSQL.UpdateProxy(data, p.Id)

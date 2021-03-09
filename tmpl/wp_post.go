@@ -37,7 +37,7 @@ func CreateWpPostTmpl(post WpPost) string {
 			<div class="ca-header">
 				<div class="ca-header-content">
 					<div class="ca-header-user">
-						<figure style="background: url('` + post.Image + `') no-repeat center / cover;"></figure>
+						<figure style="background: url('/wp-content/uploads/2021/02/default.jpg') no-repeat center / cover;"></figure>
 						<p class="ca-header-by">Asked by: ` + post.AskedBy + `</p>
 						<div class="ca-header-tag red">Questioner</div>
 						<div class="ca-header-tag blue">General</div>
@@ -45,8 +45,8 @@ func CreateWpPostTmpl(post WpPost) string {
 					<h1 class="ca-header-title">` + post.Title + `</h1>
 					<p class="ca-header-description">` + post.Content + `</p>
 					<div class="ca-header-date">
-						<img src="http://testwp.com/wp-content/uploads/2021/02/date.png" />
-						<p>Last Updated: ` + post.Date + `</p>
+						<img src="/wp-content/uploads/2021/02/date.png" />
+						<p>Last Updated: [post_published]</p>
 					</div>
 				</div>
 				<div class="ca-header-vote">
@@ -75,10 +75,10 @@ func CreateWpPostTmpl(post WpPost) string {
 			tmpl += `
 				<div class="ca-list-item">
 					<div class="ca-list-item-row">
-						<a class="ca-list-item-img" href="#"><img src="` + link.Src + `" /></a>
+						<a class="ca-list-item-img" href="#"><img style="max-width: 230px" src="` + link.Src + `" /></a>
 						<div class="ca-list-item-content">
 							<div class="ca-list-item-user">
-								<figure style="background: url('http://testwp.com/wp-content/uploads/2021/02/default.jpg') no-repeat center / cover;"></figure>
+								<figure style="background: url('/wp-content/uploads/2021/02/default.jpg') no-repeat center / cover;"></figure>
 								<p class="ca-list-item-by">Asked by: ` + link.Author + `</p>
 								<div class="ca-list-item-tag">Explainer</div>
 							</div>

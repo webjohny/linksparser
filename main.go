@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"linksparser/config"
 	"log"
+
 	//"os"
 	//"time"
 	"linksparser/mysql"
@@ -72,18 +73,18 @@ func main() {
 	//	"https://finance.yahoo.com/quote/EXPI/",
 	//}
 
-	log.Fatal("list")
+	//log.Fatal("list")
 	job := JobHandler{}
-	//proxy := NewProxy()
-	//if proxy == nil {
-	//	log.Fatal("Need free proxies")
-	//}
+	proxy := NewProxy()
+	if proxy == nil {
+		log.Fatal("Need free proxies")
+	}
 	job.IsStart = true
-	//job.Browser.Init()
-	//job.proxy = *proxy
-	//job.IsStart = true
-	//if job.Browser.Init() {
-	if false {
+	job.Browser.Init()
+	job.proxy = *proxy
+	job.IsStart = true
+	if job.Browser.Init() {
+	//if false {
 		fmt.Println(job.Run(2))
 		//job.Run(1)
 		//job.Run(1)

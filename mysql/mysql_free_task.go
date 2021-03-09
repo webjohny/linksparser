@@ -128,7 +128,7 @@ func (t *FreeTask) SetFinished(status int, errorMsg string) {
 	data["log"] = strings.Join(t.Log, "\n")
 	data["log_last"] = lastLog
 	data["error"] = errorMsg
-	data["parser"] = "NULL"
+	data["stream"] = "NULL"
 	data["timeout"] = "NULL"
 	data["parse_date"] = formattedDate
 
@@ -151,7 +151,7 @@ func (t *FreeTask) FreeTask() {
 	data := map[string]interface{}{}
 	data["log"] = strings.Join(t.Log, "\n")
 	data["log_last"] = lastLog
-	data["parser"] = "NULL"
+	data["stream"] = "NULL"
 	data["timeout"] = "NULL"
 	data["try_count"] = t.TryCount
 
@@ -195,7 +195,7 @@ func (t *FreeTask) SetError(error string) {
 	data["log_last"] = error
 	data["error"] = error
 	data["status"] = 2
-	data["parser"] = ""
+	data["stream"] = ""
 	data["timeout"] = "NULL"
 	data["parse_date"] = formattedDate
 

@@ -280,43 +280,46 @@ func (w *Wordpress) CheckConn() bool {
 	return w.client != nil
 }
 
-func (w *Wordpress) UploadFile(url string, postId int, encoded bool) (WpImage, error) {
+func (w *Wordpress) UploadFile(url string, postId int, bytes *[]byte, encoded bool) (WpImage, error) {
 	var image WpImage
-	var bytes []byte
 	var err error
 	var name string
 
-	if !encoded {
-		resp, _ := http.Get(url)
-		defer resp.Body.Close()
+	if bytes == nil {
+		if !encoded {
+			resp, _ := http.Get(url)
+			defer resp.Body.Close()
 
-		bytes, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Println("Wordpress.UploadFile.HasError", err)
-			return image, err
+			bts, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Println("Wordpress.UploadFile.HasError", err)
+				return image, err
+			}
+			bytes = &bts
+		} else {
+			bts, err := base64.StdEncoding.DecodeString(url)
+			if err != nil {
+				log.Println("Wordpress.UploadFile.HasError.1", err)
+				return image, err
+			}
+			bytes = &bts
 		}
-		name = path.Base(url)
-	}else{
-		bytes, err = base64.StdEncoding.DecodeString(url)
-		if err != nil {
-			log.Println("Wordpress.UploadFile.HasError.1", err)
-			return image, err
-		}
-		kind, _ := filetype.Match(bytes)
-		if kind == filetype.Unknown {
-			fmt.Println("Wordpress.UploadFile.HasError.2", "Unknown file type")
-			return image, nil
-		}
-
-		name = randStringRunes(20) + "." + kind.Extension
 	}
 
-	mime := http.DetectContentType(bytes)
+	kind, _ := filetype.Match(*bytes)
+	if kind == filetype.Unknown {
+		fmt.Println("Wordpress.UploadFile.HasError.2", "Unknown file type")
+		return image, nil
+	}
+
+	name = randStringRunes(20) + "." + kind.Extension
+
+	mime := http.DetectContentType(*bytes)
 	if !strings.Contains(mime, "image") {
 		return image, nil
 	}
 
-	encodedImg := base64.StdEncoding.EncodeToString(bytes)
+	encodedImg := base64.StdEncoding.EncodeToString(*bytes)
 
 	params := map[string]interface{}{
 		"overwrite": true,
@@ -334,7 +337,7 @@ func (w *Wordpress) UploadFile(url string, postId int, encoded bool) (WpImage, e
 		w.cnf, params,
 	), &response)
 	if err != nil {
-		log.Println("Wordpress.UploadFile.2.HasError", err)
+		log.Println("Wordpress.UploadFile.3.HasError", err)
 		w.err = err
 	}else if response != nil{
 		image.Id = toInt(response["id"].(string))

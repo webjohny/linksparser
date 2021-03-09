@@ -132,7 +132,8 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	j.Browser.Proxy.setTimeout(parser, 5)
 	task.SetLog("Подключаем прокси #" + strconv.Itoa(j.Browser.Proxy.Id) + " к браузеру (" + j.Browser.Proxy.LocalIp + ")")
 
-	task.SetTimeout(parser)
+	//task.SetTimeout(parser)
+	task.FreeTask()
 
 	var searchHtml string
 	var googleUrl string
@@ -199,6 +200,17 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		log.Println("JobHandler.SetFastAnswer.HasError", err)
 	}
 
+	task.SetLog(`Подключение к ` + task.Domain)
+
+	wp := services.Wordpress{}
+	wp.Connect(`http://` + task.Domain + `/xmlrpc.php`, task.Login, task.Password, 1)
+	if !wp.CheckConn() {
+		task.SetLog("Не получилось подключится к wp xmlrpc (https://" + task.Domain + "/xmlrpc2.php - " + task.Login + " / " + task.Password + ")")
+		task.SetError(wp.GetError().Error())
+		go j.Cancel()
+		return false, "Не получилось подключится к wp xmlrpc (https://" + task.Domain + "/xmlrpc2.php - " + task.Login + " / " + task.Password + ")"
+	}
+
 	task.SetLog("Парсинг ссылок из выдачи")
 
 	var wpPost tmpl.WpPost
@@ -232,6 +244,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	if err != nil {
 		fmt.Println(err)
 	}
+	//for i := 0; i < 1; i++ {
 	for i := 0; i < len(wpPost.Links); i++ {
 		res := wpPost.Links[i]
 		dsw, err := j.ExtractSimilarWebData(res.Link)
@@ -244,12 +257,19 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 			buf, err := j.Browser.ScreenShot(res.Link)
 			if err != nil {
 				fmt.Println("ERR.JobHandler.Run.Screenshot", err)
+			}else{
+				err = ioutil.WriteFile(CONF.ImgPath + "/" + strconv.Itoa(task.Id) + "-" + strconv.Itoa(i) + ".jpg", *buf, 0644)
+				if err != nil {
+					fmt.Println("ERR.JobHandler.Run.Screenshot.2", err)
+				}
+				file, err := wp.UploadFile("", 0, buf, false)
+				if err != nil {
+					fmt.Println("ERR.JobHandler.Run.Screenshot.3", err)
+				}else {
+					res.Src = file.Url
+				}
+				res.Image = *buf
 			}
-			err = ioutil.WriteFile(CONF.ImgPath + "/" + strconv.Itoa(task.Id) + "-" + strconv.Itoa(i) + ".jpg", *buf, 0644)
-			if err != nil {
-				fmt.Println("ERR.JobHandler.Run.Screenshot.2", err)
-			}
-			res.Image = *buf
 			res.GlobalRank = dsw.GlobalRank.Rank
 			res.PageViews = dsw.Engagments.Visits
 			res.Title = dsw.Title
@@ -280,8 +300,6 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		"<li><strong>Step 3.</strong> If you still can't access " + wpPost.Title + " then see <a href='#'>Troubleshooting options here</a>.</li>" +
 		"</ul>"
 
-
-
 	rendered := tmpl.CreateWpPostTmpl(wpPost)
 
 	_, err =  MYSQL.AddResult(map[string]interface{}{
@@ -293,14 +311,6 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	})
 	if err != nil {
 		fmt.Println("ERR.JobHandler.Run")
-	}
-	wp := services.Wordpress{}
-	wp.Connect(`http://` + task.Domain + `/xmlrpc.php`, task.Login, task.Password, 1)
-	if !wp.CheckConn() {
-		task.SetLog("Не получилось подключится к wp xmlrpc (https://" + task.Domain + "/xmlrpc2.php - " + task.Login + " / " + task.Password + ")")
-		task.SetError(wp.GetError().Error())
-		go j.Cancel()
-		return false, "Не получилось подключится к wp xmlrpc (https://" + task.Domain + "/xmlrpc2.php - " + task.Login + " / " + task.Password + ")"
 	}
 
 	// Отправляем заметку на сайт
