@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bxcodec/faker"
@@ -228,6 +227,11 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 
 	task.SetLog("Извлечение информации по ссылкам из API Data.Similarweb.com")
 
+
+	list, err := services.GetCountryList()
+	if err != nil {
+		fmt.Println(err)
+	}
 	for i := 0; i < len(wpPost.Links); i++ {
 		res := wpPost.Links[i]
 		dsw, err := j.ExtractSimilarWebData(res.Link)
@@ -251,6 +255,17 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 			res.Title = dsw.Title
 			res.Description = dsw.Description
 			res.Author = faker.FirstName() + " " + faker.LastName()
+			if list != nil && len(list.Country) > 0 {
+				for _, country := range list.Country {
+					iso, _ := strconv.Atoi(country.Iso)
+					if int(dsw.CountryRank.Country) == iso {
+						res.CountryName = country.English
+						res.CountryCode = country.Iso
+						res.CountryImg = strings.ToLower(country.Alpha2) + ".png"
+					}
+				}
+			}
+
 		}
 		time.Sleep(time.Second * time.Duration(rand.Intn(15)+3))
 	}
@@ -265,15 +280,9 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		"<li><strong>Step 3.</strong> If you still can't access " + wpPost.Title + " then see <a href='#'>Troubleshooting options here</a>.</li>" +
 		"</ul>"
 
+
+
 	rendered := tmpl.CreateWpPostTmpl(wpPost)
-	fmt.Print(rendered != "")
-	if xmlBytes, err := services.GetXML("http://somehost.com/some.xml"); err != nil {
-		log.Printf("Failed to get XML: %v", err)
-	} else {
-		var result map[string]interface{}
-		xml.Unmarshal(xmlBytes, &result)
-		fmt.Print(result)
-	}
 
 	_, err =  MYSQL.AddResult(map[string]interface{}{
 		"keyword": wpPost.Title,
@@ -295,12 +304,12 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	}
 
 	// Отправляем заметку на сайт
-	postId := wp.NewPost(wpPost.Title, wpPost.Content, wpPost.CatId, 12)
+	postId := wp.NewPost(wpPost.Title, rendered, wpPost.CatId, 12)
 	var fault bool
 	if postId > 0 {
 		post := wp.GetPost(postId)
 		if post.Id > 0 {
-			wp.EditPost(postId, wpPost.Title, wpPost.Content)
+			wp.EditPost(postId, wpPost.Title, rendered)
 		}else{
 			fault = true
 		}

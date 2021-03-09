@@ -3,9 +3,7 @@ package main
 import (
 	"fmt"
 	"linksparser/config"
-	"linksparser/services"
 	"log"
-
 	//"os"
 	//"time"
 	"linksparser/mysql"
@@ -74,11 +72,7 @@ func main() {
 	//	"https://finance.yahoo.com/quote/EXPI/",
 	//}
 
-	list, err := services.GetCountryList()
-	if err != nil {
-		fmt.Println(err)
-	}
-	log.Fatal(list)
+	log.Fatal("list")
 	job := JobHandler{}
 	//proxy := NewProxy()
 	//if proxy == nil {

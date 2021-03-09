@@ -27,6 +27,7 @@ type LinkResult struct {
 	PageViews string
 	CountryCode string
 	CountryName string
+	CountryImg string
 }
 
 func CreateWpPostTmpl(post WpPost) string {
@@ -96,12 +97,12 @@ func CreateWpPostTmpl(post WpPost) string {
 							<p class="ca-list-item-info-item-text">Pageviews</p>
 						</div>
 						<div class="ca-list-item-info-item">
-							<p class="ca-list-item-info-item-value"><img src="http://testwp.com/wp-content/uploads/2021/02/us.png" /> <span style="color: #000;">` + link.CountryName + `</span></p>
+							<p class="ca-list-item-info-item-value"><img src="/wp-content/uploads/flags/` + link.CountryImg + `" /> <span style="color: #000;">` + link.CountryName + `</span></p>
 							<p class="ca-list-item-info-item-text">Top Country</p>
 						</div>
 						<div class="ca-list-item-info-item">
 							<p class="ca-list-item-info-item-value"><span style="background: #7ed321;">Up</span></p>
-							<p class="ca-list-item-info-item-text">Site Staus</p>
+							<p class="ca-list-item-info-item-text">Site Status</p>
 						</div>
 						<div class="ca-list-item-info-item">
 							<p class="ca-list-item-info-item-value"><span style="background: #5bc0de;">[ca_random_time]h ago</span></p>
