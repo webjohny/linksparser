@@ -6,11 +6,16 @@ import (
 	"github.com/jmoiron/sqlx"
 	"log"
 	"os/exec"
+	"reflect"
 	"time"
 )
 
 type Instance struct {
 	db *sqlx.DB
+}
+
+func isNil(i interface{}) bool {
+	return i == nil || reflect.ValueOf(i).IsNil()
 }
 
 func CreateConnection(host string, db string, login string, pass string) Instance {

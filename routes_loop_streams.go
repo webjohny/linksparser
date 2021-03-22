@@ -25,6 +25,7 @@ func (rt *Routes) startLoopStreams(w http.ResponseWriter, r *http.Request) {
 	extra.CountStreams = count
 	_ = MYSQL.SetExtra(extra)
 
+	fmt.Println(count, limit, cmd)
 	STREAMS.StartLoop(count, limit, cmd)
 
 	err := json.NewEncoder(w).Encode(map[string]bool{

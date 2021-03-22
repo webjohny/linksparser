@@ -11,31 +11,14 @@ type Site struct {
 	Domain sql.NullString `db:"domain" json:"domain"`
 	Login sql.NullString `db:"login" json:"login"`
 	Password sql.NullString `db:"password" json:"password"`
-	From sql.NullInt64 `db:"from" json:"from"`
-	To sql.NullInt64 `db:"to" json:"to"`
-	QstsLimit sql.NullInt64 `db:"qsts_limit" json:"qsts_limit"`
-	Linking sql.NullInt64 `db:"linking" json:"linking"`
-	Header sql.NullInt64 `db:"header" json:"header"`
-	SubHeaders sql.NullInt64 `db:"subheaders" json:"subheaders"`
-	ParseDates sql.NullInt64 `db:"parse_dates" json:"parse_dates"`
-	ParseDoubles sql.NullInt64 `db:"parse_doubles" json:"parse_doubles"`
-	PubImage sql.NullInt64 `db:"pub_image" json:"pub_image"`
-	VideoStep sql.NullInt64 `db:"video_step" json:"video_step"`
-	QaCount sql.NullInt64 `db:"qa_count" json:"qa_count"`
-	QaCountFrom sql.NullInt32 `db:"qa_count_from" json:"qa_count_from"`
-	QaCountTo sql.NullInt32 `db:"qa_count_to" json:"qa_count_to"`
-	ParseFast sql.NullInt32 `db:"parse_fast" json:"parse_fast"`
-	ParseSearch4 sql.NullInt32 `db:"parse_search4" json:"parse_search4"`
-	ImageKey sql.NullInt64 `db:"image_key" json:"image_key"`
-	H1 sql.NullInt32 `db:"h1" json:"h1"`
-	ShOrder sql.NullInt32 `db:"sh_order" json:"sh_order"`
-	ShFormat sql.NullInt32 `db:"sh_format" json:"sh_format"`
-	ImageSource sql.NullInt64 `db:"image_source" json:"image_source"`
 	Info sql.NullString `db:"info" json:"info"`
 	MoreTags sql.NullString `db:"more_tags" json:"more_tags"`
 	Extra sql.NullString `db:"extra" json:"extra"`
 	SymbMicroMarking sql.NullString `db:"symb_micro_marking" json:"symb_micro_marking"`
 	CountRows sql.NullInt64 `db:"count_rows" json:"count_rows"`
+	CreatedAt sql.NullString `db:"created_at" json:"created_at"`
+	UpdatedAt sql.NullString `db:"updated_at" json:"updated_at"`
+	DeletedAt sql.NullString `db:"deleted_at" json:"deleted_at"`
 }
 
 type Config struct {
@@ -52,6 +35,9 @@ type Cat struct {
 	Id sql.NullInt64 `db:"id" json:"id"`
 	SiteId sql.NullInt64 `db:"site_id" json:"site_id"`
 	Title sql.NullString `db:"title" json:"title"`
+	CreatedAt sql.NullString `db:"created_at" json:"created_at"`
+	UpdatedAt sql.NullString `db:"updated_at" json:"updated_at"`
+	DeletedAt sql.NullString `db:"deleted_at" json:"deleted_at"`
 }
 
 type Uagent struct {
@@ -106,8 +92,11 @@ type Proxy struct {
 	Password sql.NullString `json:"password"`
 	Agent sql.NullString `json:"agent"`
 	Status sql.NullInt64 `json:"status"`
-	Parser sql.NullString `json:"parser"`
+	Stream sql.NullString `json:"stream"`
 	Timeout sql.NullString `json:"timeout"`
+	CreatedAt sql.NullString `db:"created_at" json:"created_at"`
+	UpdatedAt sql.NullString `db:"updated_at" json:"updated_at"`
+	DeletedAt sql.NullString `db:"deleted_at" json:"deleted_at"`
 }
 
 type Image struct {

@@ -13,7 +13,7 @@ func (m *Instance) GetFreeProxy() Proxy {
 
 	t := time.Now()
 	now := t.Format("2006-01-02 15:04:05")
-	sqlQuery := "SELECT * FROM `proxy` WHERE (`status` is NULL OR `status` = 0) AND (`timeout` is NULL OR `timeout` < '" + now + "') ORDER BY `status` ASC, `timeout` ASC LIMIT 1"
+	sqlQuery := "SELECT * FROM `proxies` WHERE (`status` is NULL OR `status` = 0) AND (`timeout` is NULL OR `timeout` < '" + now + "') ORDER BY `status` ASC, `timeout` ASC LIMIT 1"
 	fmt.Println(sqlQuery)
 
 	err := m.db.Get(&proxy, sqlQuery)
@@ -27,7 +27,7 @@ func (m *Instance) GetFreeProxy() Proxy {
 func (m *Instance) GetProxies() []Proxy {
 	var proxies []Proxy
 
-	sqlQuery := "SELECT * FROM `proxy`"
+	sqlQuery := "SELECT * FROM `proxies`"
 	fmt.Println(sqlQuery)
 
 	err := m.db.Select(&proxies, sqlQuery)
@@ -39,7 +39,7 @@ func (m *Instance) GetProxies() []Proxy {
 }
 
 func (m *Instance) UpdateProxy(data map[string]interface{}, id int) (sql.Result, error) {
-	sqlQuery := "UPDATE `proxy` SET "
+	sqlQuery := "UPDATE `proxies` SET "
 
 	if len(data) > 0 {
 		updateQuery := ""

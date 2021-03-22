@@ -46,7 +46,7 @@ func (m *Instance) GetTaskByKeyword(k string) Task {
 func (m *Instance) GetCountTasks(params map[string]interface{}) int {
 	var count int
 	rows, err := m.db.Query("SELECT COUNT(*) as `count` FROM `tasks`")
-	fmt.Println(rows)
+
 	if err == nil {
 		for rows.Next() {
 			err := rows.Scan(&count)

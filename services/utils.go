@@ -57,6 +57,13 @@ func GetCountryList () (*CountryList, error) {
 	return result, nil
 }
 
+func SetTmpl(tmpl string, params map[string]string) string{
+	for k, v := range params {
+		tmpl = strings.ReplaceAll(tmpl, "{" + k + "}", v)
+	}
+	return tmpl
+}
+
 func GetXML(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if err != nil {

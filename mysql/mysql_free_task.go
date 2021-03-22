@@ -24,25 +24,6 @@ type FreeTask struct {
 	Domain string `db:"domain" json:"domain"`
 	Login string `db:"login" json:"login"`
 	Password string `db:"password" json:"password"`
-	From int `db:"from" json:"from"`
-	To int `db:"to" json:"to"`
-	QstsLimit int `db:"qsts_limit" json:"qsts_limit"`
-	Linking int `db:"linking" json:"linking"`
-	Header int `db:"header" json:"header"`
-	SubHeaders int `db:"subheaders" json:"subheaders"`
-	ParseDates int `db:"parse_dates" json:"parse_dates"`
-	ParseDoubles int `db:"parse_doubles" json:"parse_doubles"`
-	PubImage int `db:"pub_image" json:"pub_image"`
-	VideoStep int `db:"video_step" json:"video_step"`
-	QaCountFrom int `db:"qa_count_from" json:"qa_count_from"`
-	QaCountTo int `db:"qa_count_to" json:"qa_count_to"`
-	ParseFast int `db:"parse_fast" json:"parse_fast"`
-	ParseSearch4     int              `db:"parse_search4" json:"parse_search4"`
-	ImageKey         int              `db:"image_key" json:"image_key"`
-	H1               int              `db:"h1" json:"h1"`
-	ShOrder          int              `db:"sh_order" json:"sh_order"`
-	ShFormat         int              `db:"sh_format" json:"sh_format"`
-	ImageSource      int              `db:"image_source" json:"image_source"`
 	MoreTags         string           `db:"more_tags" json:"more_tags"`
 	SymbMicroMarking string           `db:"symb_micro_marking" json:"symb_micro_marking"`
 	CountRows        int              `db:"count_rows" json:"count_rows"`
@@ -74,25 +55,6 @@ func (t *FreeTask) MergeSite(site Site){
 	t.Domain = site.Domain.String
 	t.Login = site.Login.String
 	t.Password = site.Password.String
-	t.From = int(site.From.Int64)
-	t.To = int(site.To.Int64)
-	t.QstsLimit = int(site.QstsLimit.Int64)
-	t.Linking = int(site.Linking.Int64)
-	t.Header = int(site.Header.Int64)
-	t.SubHeaders = int(site.SubHeaders.Int64)
-	t.ParseDates = int(site.ParseDates.Int64)
-	t.ParseDoubles = int(site.ParseDoubles.Int64)
-	t.PubImage = int(site.PubImage.Int64)
-	t.VideoStep = int(site.VideoStep.Int64)
-	t.QaCountFrom = int(site.QaCountFrom.Int32)
-	t.QaCountTo = int(site.QaCountTo.Int32)
-	t.ParseFast = int(site.ParseFast.Int32)
-	t.ParseSearch4 = int(site.ParseSearch4.Int32)
-	t.ImageKey = int(site.ImageKey.Int64)
-	t.H1 = int(site.H1.Int32)
-	t.ShOrder = int(site.ShOrder.Int32)
-	t.ShFormat = int(site.ShFormat.Int32)
-	t.ImageSource = int(site.ImageSource.Int64)
 	t.CountRows = int(site.CountRows.Int64)
 	t.MoreTags = site.MoreTags.String
 	t.SymbMicroMarking = site.SymbMicroMarking.String
@@ -130,7 +92,7 @@ func (t *FreeTask) SetFinished(status int, errorMsg string) {
 	data["error"] = errorMsg
 	data["stream"] = "NULL"
 	data["timeout"] = "NULL"
-	data["parse_date"] = formattedDate
+	data["parsed_at"] = formattedDate
 
 	_, err := t.db.UpdateTask(data, t.Id)
 	if err != nil {
@@ -197,7 +159,7 @@ func (t *FreeTask) SetError(error string) {
 	data["status"] = 2
 	data["stream"] = ""
 	data["timeout"] = "NULL"
-	data["parse_date"] = formattedDate
+	data["parsed_at"] = formattedDate
 
 	_, err := t.db.UpdateTask(data, t.Id)
 	if err != nil {
@@ -275,7 +237,7 @@ func (m *Instance) GetFreeTask(id int) FreeTask {
 	var sites []Site
 
 	sqlCount := "SELECT COUNT(*) FROM `tasks` WHERE `site_id` = s.id"
-	sqlSelectSite := "s.id, s.extra, s.qsts_limit, s.more_tags, s.symb_micro_marking, s.language, s.theme, s.from, s.to, s.qa_count_from, s.qa_count_to, s.login, s.password, s.domain, s.h1, s.sh_format, s.sh_order, s.video_step, s.linking, s.parse_dates, s.parse_doubles, s.parse_fast, s.parse_search4, s.image_source, s.image_key, s.pub_image, (" + sqlCount + ") as count_rows"
+	sqlSelectSite := "s.id, s.extra, s.more_tags, s.symb_micro_marking, s.language, s.login, s.password, s.domain, (" + sqlCount + ") as count_rows"
 	sqlSite := "SELECT " + sqlSelectSite + " FROM sites s"
 
 	err := m.db.Select(&sites, sqlSite)
@@ -331,7 +293,7 @@ func (m *Instance) GetFreeTask(id int) FreeTask {
 			log.Println("MysqlDb.GetFreeTask.2.HasError", err)
 		}
 		freeTask.MergeTask(task)
-		freeTask.SavingAvailable = freeTask.QstsLimit > freeTask.CountRows
+		freeTask.SavingAvailable = true
 	}
 	freeTask.db = m
 	return freeTask

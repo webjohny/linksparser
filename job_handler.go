@@ -10,6 +10,7 @@ import (
 	"linksparser/mysql"
 	"linksparser/services"
 	"linksparser/tmpl"
+	"linksparser/wordpress"
 	"log"
 	"math/rand"
 	"net/url"
@@ -132,8 +133,8 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	j.Browser.Proxy.setTimeout(parser, 5)
 	task.SetLog("Подключаем прокси #" + strconv.Itoa(j.Browser.Proxy.Id) + " к браузеру (" + j.Browser.Proxy.LocalIp + ")")
 
-	//task.SetTimeout(parser)
-	task.FreeTask()
+	task.SetTimeout(parser)
+	//task.FreeTask()
 
 	var searchHtml string
 	var googleUrl string
@@ -202,8 +203,8 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 
 	task.SetLog(`Подключение к ` + task.Domain)
 
-	wp := services.Wordpress{}
-	wp.Connect(`http://` + task.Domain + `/xmlrpc.php`, task.Login, task.Password, 1)
+	wp := wordpress.Base{}
+	wp.Connect(`https://` + task.Domain, task.Login, task.Password, 1)
 	if !wp.CheckConn() {
 		task.SetLog("Не получилось подключится к wp xmlrpc (https://" + task.Domain + "/xmlrpc2.php - " + task.Login + " / " + task.Password + ")")
 		task.SetError(wp.GetError().Error())
@@ -244,61 +245,80 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	//for i := 0; i < 1; i++ {
-	for i := 0; i < len(wpPost.Links); i++ {
-		res := wpPost.Links[i]
-		dsw, err := j.ExtractSimilarWebData(res.Link)
-		if err != nil {
-			task.SetLog("Ошибка загрузки на ресурсе: " + res.Link)
-			continue
-		}
 
-		if dsw != nil {
-			buf, err := j.Browser.ScreenShot(res.Link)
+	if len(wpPost.Links) > 0 {
+		//for i := 0; i < 1; i++ {
+			for i := 0; i < len(wpPost.Links); i++ {
+			res := wpPost.Links[i]
+			dsw, err := j.ExtractSimilarWebData(res.Link)
 			if err != nil {
-				fmt.Println("ERR.JobHandler.Run.Screenshot", err)
-			}else{
-				err = ioutil.WriteFile(CONF.ImgPath + "/" + strconv.Itoa(task.Id) + "-" + strconv.Itoa(i) + ".jpg", *buf, 0644)
-				if err != nil {
-					fmt.Println("ERR.JobHandler.Run.Screenshot.2", err)
-				}
-				file, err := wp.UploadFile("", 0, buf, false)
-				if err != nil {
-					fmt.Println("ERR.JobHandler.Run.Screenshot.3", err)
-				}else {
-					res.Src = file.Url
-				}
-				res.Image = *buf
+				task.SetLog("Ошибка загрузки на ресурсе: " + res.Link)
+				continue
 			}
-			res.GlobalRank = dsw.GlobalRank.Rank
-			res.PageViews = dsw.Engagments.Visits
-			res.Title = dsw.Title
-			res.Description = dsw.Description
-			res.Author = faker.FirstName() + " " + faker.LastName()
-			if list != nil && len(list.Country) > 0 {
-				for _, country := range list.Country {
-					iso, _ := strconv.Atoi(country.Iso)
-					if int(dsw.CountryRank.Country) == iso {
-						res.CountryName = country.English
-						res.CountryCode = country.Iso
-						res.CountryImg = strings.ToLower(country.Alpha2) + ".png"
+
+			if dsw != nil {
+				buf, err := j.Browser.ScreenShot(res.Link)
+				if err != nil {
+					fmt.Println("ERR.JobHandler.Run.Screenshot", err)
+				} else {
+					err = ioutil.WriteFile(CONF.ImgPath+"/"+strconv.Itoa(task.Id)+"-"+strconv.Itoa(i)+".jpg", *buf, 0644)
+					if err != nil {
+						fmt.Println("ERR.JobHandler.Run.Screenshot.2", err)
+					}
+					file, err := wp.UploadFile("", 0, buf, false)
+					if err != nil {
+						fmt.Println("ERR.JobHandler.Run.Screenshot.3", err)
+					} else {
+						res.Src = file.Url
+					}
+					res.Image = *buf
+				}
+				res.GlobalRank = dsw.GlobalRank.Rank
+				res.PageViews = dsw.Engagments.Visits
+				res.Title = dsw.Title
+				res.Description = dsw.Description
+				res.Author = faker.FirstName() + " " + faker.LastName()
+				if list != nil && len(list.Country) > 0 {
+					for _, country := range list.Country {
+						iso, _ := strconv.Atoi(country.Iso)
+						if int(dsw.CountryRank.Country) == iso {
+							res.CountryName = country.English
+							res.CountryCode = country.Iso
+							res.CountryImg = strings.ToLower(country.Alpha2) + ".png"
+						}
 					}
 				}
-			}
 
+			}
+			time.Sleep(time.Second * time.Duration(rand.Intn(15)+3))
 		}
-		time.Sleep(time.Second * time.Duration(rand.Intn(15)+3))
+	}
+
+	params := map[string]string{
+		"keyword": j.task.Keyword,
+		"askedBy": wpPost.AskedBy,
+	}
+	configExtra := j.config.GetExtra()
+	extra := j.task.Extra
+	texts := extra.Texts
+	if len(texts) < 1 {
+		texts = configExtra.Texts
+	}
+	answers := extra.Answers
+	if len(answers) < 1 {
+		answers = configExtra.Answers
+	}
+	if len(texts) > 0 {
+		content := services.ArrayRand(texts)
+		wpPost.Content = services.SetTmpl(content, params)
+	}
+	if len(answers) > 0 {
+		answerText := services.ArrayRand(answers)
+		wpPost.Text = services.SetTmpl(answerText, params)
 	}
 
 	wpPost.Title = task.Keyword
-	wpPost.Content = "Looking for " + wpPost.Title + "? Get direct access to " + wpPost.Title + " through official links provided below."
 	wpPost.AskedBy = faker.FirstName() + " " + faker.LastName()
-	wpPost.Text = "<p>Follow these easy steps: </p>" +
-		"<ul>" +
-		"<li><strong>Step 1.</strong> Go to " + wpPost.Title + " page via official link below.</li>" +
-		"<li><strong>Step 2.</strong> Login using your username and password. Login screen appears upon successful login.</li>" +
-		"<li><strong>Step 3.</strong> If you still can't access " + wpPost.Title + " then see <a href='#'>Troubleshooting options here</a>.</li>" +
-		"</ul>"
 
 	rendered := tmpl.CreateWpPostTmpl(wpPost)
 
@@ -328,10 +348,10 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	}
 	
 
-	fmt.Println(wpPost.Links)
-	fmt.Println(searchesRelated)
-	task.FreeTask()
-	log.Fatal("STOP")
+	//fmt.Println(wpPost.Links)
+	//fmt.Println(searchesRelated)
+	//task.FreeTask()
+	//log.Fatal("STOP")
 
 	if j.CheckFinished() {
 		task.FreeTask()
@@ -339,19 +359,16 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		return false, "Timeout"
 	}
 
-	if task.ParseSearch4 < 1 {
 
-		if fault {
-			task.SetLog("Не получилось разместить статью на сайте")
-			task.SetError(wp.GetError().Error())
-			go j.Cancel()
-			return false, "Не получилось разместить статью на сайте"
-		}
-
-		task.SetLog("Статья размещена на сайте")
-	}else{
-		task.SetLog(`Данные сохранены в "Search for"`)
+	if fault {
+		task.SetLog("Не получилось разместить статью на сайте")
+		task.SetError(wp.GetError().Error())
+		go j.Cancel()
+		return false, "Не получилось разместить статью на сайте"
 	}
+
+	task.SetLog("Статья размещена на сайте")
+
 	task.SetFinished(1, "")
 	fmt.Println(taskId)
 	go j.Cancel()
