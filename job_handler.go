@@ -248,7 +248,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 
 	if len(wpPost.Links) > 0 {
 		//for i := 0; i < 1; i++ {
-			for i := 0; i < len(wpPost.Links); i++ {
+		for i := 0; i < len(wpPost.Links); i++ {
 			res := wpPost.Links[i]
 			dsw, err := j.ExtractSimilarWebData(res.Link)
 			if err != nil {
@@ -286,6 +286,20 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 							res.CountryCode = country.Iso
 							res.CountryImg = strings.ToLower(country.Alpha2) + ".png"
 						}
+					}
+				}
+
+				if !MYSQL.GetTaskByKeyword(res.Title).Id.Valid {
+					if _, err := MYSQL.AddTask(map[string]interface{}{
+						"site_id" : strconv.Itoa(task.SiteId),
+						"cat_id" : strconv.Itoa(task.CatId),
+						"parent_id" : strconv.Itoa(task.Id),
+						"keyword" : res.Title,
+						"stream" : "",
+						"error" : "",
+					}); err != nil {
+						log.Println("JobHandler.Run.6.HasError", err)
+						task.SetLog("Не добавилась новая задача. (" + err.Error() + ")")
 					}
 				}
 
@@ -330,7 +344,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		"content": wpPost.Content,
 	})
 	if err != nil {
-		fmt.Println("ERR.JobHandler.Run")
+		fmt.Println("ERR.JobHandler.Run.AddResult")
 	}
 
 	// Отправляем заметку на сайт

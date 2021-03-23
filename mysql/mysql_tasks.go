@@ -20,7 +20,7 @@ func ShuffleSites(sites []Site) []Site {
 }
 
 func (m *Instance) CountWorkingTasks() int {
-	rows, _ := m.db.Query("SELECT COUNT(*) as count FROM `tasks` WHERE `timeout` IS NOT NULL AND `parser` IS NOT NULL")
+	rows, _ := m.db.Query("SELECT COUNT(*) as count FROM `tasks` WHERE `timeout` IS NOT NULL AND `stream` IS NOT NULL")
 	var count int
 	for rows.Next() {
 		err := rows.Scan(&count)
@@ -126,7 +126,7 @@ func (m *Instance) AddTask(item map[string]interface{}) (sql.Result, error) {
 		"`cat_id` = :cat_id, " +
 		"`keyword` = :keyword, " +
 		"`parent_id` = :parent_id, " +
-		"`parser` = NULL, " +
+		"`stream` = NULL, " +
 		"`error` = NULL"
 
 	res, err := m.db.NamedExec(sqlQuery, item)
