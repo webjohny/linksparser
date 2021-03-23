@@ -38,13 +38,13 @@ func main() {
 		//
 		//log.Fatal("")
 
-		go func() {
-			job := JobHandler{}
-			job.IsStart = true
-			if job.Browser.Init() {
-				job.Run(2)
-			}
-		}()
+		//go func() {
+		//	job := JobHandler{}
+		//	job.IsStart = true
+		//	if job.Browser.Init() {
+		//		job.Run(2)
+		//	}
+		//}()
 	}
 
 	//else if MYSQL.CountWorkingTasks() > 0 {

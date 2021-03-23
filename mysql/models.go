@@ -7,6 +7,7 @@ import (
 type Site struct {
 	Id sql.NullInt64 `db:"id" json:"id"`
 	Language sql.NullString `db:"language" json:"language"`
+	Status sql.NullInt32 `db:"status" json:"status"`
 	Theme sql.NullString `db:"theme" json:"theme"`
 	Domain sql.NullString `db:"domain" json:"domain"`
 	Login sql.NullString `db:"login" json:"login"`
@@ -29,6 +30,9 @@ type Config struct {
 	Language sql.NullString `db:"language" json:"language"`
 	Variants sql.NullString `db:"variants" json:"variants"`
 	Extra sql.NullString `db:"extra" json:"extra"`
+	CreatedAt sql.NullString `db:"created_at" json:"created_at"`
+	UpdatedAt sql.NullString `db:"updated_at" json:"updated_at"`
+	DeletedAt sql.NullString `db:"deleted_at" json:"deleted_at"`
 }
 
 type Cat struct {
@@ -45,6 +49,9 @@ type Uagent struct {
 	Sign sql.NullString `db:"sign" json:"sign"`
 	Status sql.NullInt32 `db:"status" json:"status"`
 	Timeout sql.NullString `db:"timeout" json:"timeout"`
+	CreatedAt sql.NullString `db:"created_at" json:"created_at"`
+	UpdatedAt sql.NullString `db:"updated_at" json:"updated_at"`
+	DeletedAt sql.NullString `db:"deleted_at" json:"deleted_at"`
 }
 
 type Result struct {
@@ -109,5 +116,8 @@ type Image struct {
 	Keyword sql.NullString `json:"keyword" db:"keyword"`
 	Source sql.NullBool `json:"source" db:"source"`
 	Status sql.NullBool `json:"status" db:"status"`
+	CreatedAt sql.NullString `db:"created_at" json:"created_at"`
+	UpdatedAt sql.NullString `db:"updated_at" json:"updated_at"`
+	DeletedAt sql.NullString `db:"deleted_at" json:"deleted_at"`
 }
 

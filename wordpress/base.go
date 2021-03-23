@@ -84,14 +84,12 @@ func toInt(value string) int {
 func (w *Base) Connect(url string, username string, password string, blogId int) *Client {
 
 	resp, _ := http.PostForm(url + `/wp-admin/conn.php`, nil)
-	if resp == nil {
-		return nil
-	}
-	if resp.StatusCode != 200 {
+
+	if resp == nil || resp.StatusCode != 200 {
 		resp, _ = http.PostForm(url + `/xmlrpc2.php`, nil)
-		if resp.StatusCode != 200 {
+		if resp == nil || resp.StatusCode != 200 {
 			resp, _ = http.PostForm(url + `/xmlrpc.php`, nil)
-			if resp.StatusCode != 200 {
+			if resp == nil || resp.StatusCode != 200 {
 				return nil
 			}else{
 				url += `/xmlrpc.php`

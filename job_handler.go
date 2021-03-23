@@ -206,8 +206,10 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	wp := wordpress.Base{}
 	wp.Connect(`https://` + task.Domain, task.Login, task.Password, 1)
 	if !wp.CheckConn() {
-		task.SetLog("Не получилось подключится к wp xmlrpc (https://" + task.Domain + "/xmlrpc2.php - " + task.Login + " / " + task.Password + ")")
-		task.SetError(wp.GetError().Error())
+		task.SetLog("Не получилось подключится к wp xmlrpc (https://" + task.Domain + " - " + task.Login + " / " + task.Password + ")")
+		if wp.GetError() != nil {
+			task.SetError(wp.GetError().Error())
+		}
 		go j.Cancel()
 		return false, "Не получилось подключится к wp xmlrpc (https://" + task.Domain + "/xmlrpc2.php - " + task.Login + " / " + task.Password + ")"
 	}
