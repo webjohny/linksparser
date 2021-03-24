@@ -240,6 +240,26 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		})
 	}
 
+	if len(searchesRelated) > 0 {
+		for i := 0; i < len(searchesRelated); i++ {
+			item := searchesRelated[i]
+
+			if !MYSQL.GetTaskByKeyword(item).Id.Valid {
+				if _, err := MYSQL.AddTask(map[string]interface{}{
+					"site_id" : strconv.Itoa(task.SiteId),
+					"cat_id" : strconv.Itoa(task.CatId),
+					"parent_id" : strconv.Itoa(task.Id),
+					"keyword" : item,
+					"stream" : "",
+					"error" : "",
+				}); err != nil {
+					log.Println("JobHandler.Run.6.HasError", err)
+					task.SetLog("Не добавилась новая задача. (" + err.Error() + ")")
+				}
+			}
+		}
+	}
+
 	task.SetLog("Извлечение информации по ссылкам из API Data.Similarweb.com")
 
 
@@ -288,20 +308,6 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 							res.CountryCode = country.Iso
 							res.CountryImg = strings.ToLower(country.Alpha2) + ".png"
 						}
-					}
-				}
-
-				if !MYSQL.GetTaskByKeyword(res.Title).Id.Valid {
-					if _, err := MYSQL.AddTask(map[string]interface{}{
-						"site_id" : strconv.Itoa(task.SiteId),
-						"cat_id" : strconv.Itoa(task.CatId),
-						"parent_id" : strconv.Itoa(task.Id),
-						"keyword" : res.Title,
-						"stream" : "",
-						"error" : "",
-					}); err != nil {
-						log.Println("JobHandler.Run.6.HasError", err)
-						task.SetLog("Не добавилась новая задача. (" + err.Error() + ")")
 					}
 				}
 
