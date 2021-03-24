@@ -207,16 +207,22 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	wp.Connect(`https://` + task.Domain, task.Login, task.Password, 1)
 	if !wp.CheckConn() {
 		task.SetLog("Не получилось подключится к wp xmlrpc (https://" + task.Domain + " - " + task.Login + " / " + task.Password + ")")
-		if wp.GetError() != nil {
-			task.SetError(wp.GetError().Error())
+		task.SetLog("Пробуем http соединение")
+		wp.Connect(`http://` + task.Domain, task.Login, task.Password, 1)
+		if !wp.CheckConn() {
+			task.SetLog("Не получилось подключится к wp xmlrpc")
+			if wp.GetError() != nil {
+				task.SetError(wp.GetError().Error())
+			}
+			go j.Cancel()
+			return false, "Не получилось подключится к wp xmlrpc"
 		}
-		go j.Cancel()
-		return false, "Не получилось подключится к wp xmlrpc (https://" + task.Domain + "/xmlrpc2.php - " + task.Login + " / " + task.Password + ")"
 	}
 
 	task.SetLog("Парсинг ссылок из выдачи")
 
 	var wpPost tmpl.WpPost
+	var links []*tmpl.LinkResult
 	body.Find(".hlcw0c").Each(func(i int, hlcw0c *goquery.Selection) {
 		hlcw0c.Find(".g").Each(func(y int, g *goquery.Selection) {
 			var res tmpl.LinkResult
@@ -227,7 +233,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 				res.Link = href
 			}
 
-			wpPost.Links = append(wpPost.Links, &res)
+			links = append(links, &res)
 		})
 	})
 
@@ -268,12 +274,13 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		fmt.Println(err)
 	}
 
-	if len(wpPost.Links) > 0 {
+	if len(links) > 0 {
 		//for i := 0; i < 1; i++ {
-		for i := 0; i < len(wpPost.Links); i++ {
-			res := wpPost.Links[i]
+		for i := 0; i < len(links); i++ {
+			res := links[i]
 			dsw, err := j.ExtractSimilarWebData(res.Link)
 			if err != nil {
+				j.Reload()
 				task.SetLog("Ошибка загрузки на ресурсе: " + res.Link)
 				continue
 			}
@@ -310,7 +317,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 						}
 					}
 				}
-
+				wpPost.Links = append(wpPost.Links, res)
 			}
 			time.Sleep(time.Second * time.Duration(rand.Intn(15)+3))
 		}
@@ -400,6 +407,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 func (j *JobHandler) ExtractSimilarWebData(link string) (*SimilarWebResp, error) {
 	var jsonResp string
 
+	//dswUrl := link
 	dswUrl := "https://data.similarweb.com/api/v1/data?domain=" + url.QueryEscape(link)
 	if err := chromedp.Run(j.Browser.ctx,
 		// Устанавливаем страницу для парсинга

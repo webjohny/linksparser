@@ -26,13 +26,18 @@ type Proxy struct {
 func NewProxy() *Proxy {
 	proxy := MYSQL.GetFreeProxy()
 	if proxy.Id.Valid {
+		agent := MYSQL.GetAgent()
 		instance := &Proxy{}
 		instance.Id = int(proxy.Id.Int64)
 		instance.Host = proxy.Host.String
 		instance.Port = proxy.Port.String
 		instance.Login = proxy.Login.String
 		instance.Password = proxy.Password.String
-		instance.Agent = proxy.Agent.String
+		if proxy.Agent.Valid {
+			instance.Agent = proxy.Agent.String
+		}else{
+			instance.Agent = agent.Sign.String
+		}
 		instance.LocalIp = instance.Host + ":" + instance.Port
 		instance.FullIp = "http://" + instance.Login + ":" + instance.Password + "@" + instance.Host + ":" + instance.Port
 

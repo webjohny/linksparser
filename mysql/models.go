@@ -87,7 +87,7 @@ type Task struct {
 	Timeout sql.NullString `db:"timeout" json:"timeout"`
 	CreatedAt sql.NullString `db:"created_at" json:"created_at"`
 	UpdatedAt sql.NullString `db:"updated_at" json:"updated_at"`
-	DeletedAt sql.NullString `db:"deleted_at" json:"deleted_at"`
+	ParsedAt sql.NullString `db:"parsed_at" json:"parsed_at"`
 }
 
 type Proxy struct {
