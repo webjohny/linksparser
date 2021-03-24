@@ -1,12 +1,13 @@
 {
-  "Env": "local",
-  "Port": "8000",
-  "ApiHost": "http://linksparser.com/",
-  "ApiLink": "http://linksparser.com/api",
-  "ApiKey": "go-go-dance2020",
-  "ApiSecret": "o2354345bv435*^TYfrwe",
-  "MysqlHost": "localhost:3306",
-  "MysqlDb": "linksparser_db",
-  "MysqlLogin": "root",
-  "MysqlPass": ""
+  "Port": "{port}",
+  "ApiHost": "{apiHost}",
+  "ApiLink": "{apiLink}",
+  "ApiKey": "{apiKey}",
+  "ApiSecret": "{apiSecret}",
+  "MongoUrl": "{mongoUrl}",
+  "MongoDb": "{mongoDb}",
+  "MysqlHost": "{mysqlHost}",
+  "MysqlDb": "{mysqlDb}",
+  "MysqlLogin": "{mysqlLogin}",
+  "MysqlPass": "{mysqlPass}"
 }
