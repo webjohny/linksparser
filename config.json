@@ -1,5 +1,5 @@
 {
-  "Env": "local",
+  "Env": "prod",
   "Port": "8000",
   "ApiHost": "http://linksparser.com/",
   "ApiLink": "http://linksparser.com/api",

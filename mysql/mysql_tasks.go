@@ -33,9 +33,9 @@ func (m *Instance) CountWorkingTasks() int {
 
 func (m *Instance) GetTaskByKeyword(k string) Task {
 	var result Task
-	sqlQuery := "SELECT * FROM `tasks` WHERE `keyword` = ? LIMIT 1"
+	sqlQuery := "SELECT * FROM `tasks` WHERE `keyword` = '" + k + "' LIMIT 1"
 
-	err := m.db.Get(&result, sqlQuery, k)
+	err := m.db.Get(&result, sqlQuery)
 	if err != nil {
 		//log.Println("MysqlDb.GetTaskByKeyword.HasError", err)
 	}
