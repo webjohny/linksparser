@@ -74,6 +74,39 @@ func (t *FreeTask) MergeSite(site Site){
 	if v, ok := extra["cmd_streams"] ; ok {
 		t.Extra.CmdStreams = v.(string)
 	}
+	if v, ok := extra["texts"] ; ok {
+		if !isNil(v) {
+			arr := v.([]interface{})
+			if len(arr) > 0 {
+				for i := 0; i < len(arr); i++ {
+					item := arr[i]
+					t.Extra.Texts = append(t.Extra.Texts, item.(string))
+				}
+			}
+		}
+	}
+	if v, ok := extra["answers"] ; ok {
+		if !isNil(v) {
+			arr := v.([]interface{})
+			if len(arr) > 0 {
+				for i := 0; i < len(arr); i++ {
+					item := arr[i]
+					t.Extra.Answers = append(t.Extra.Answers, item.(string))
+				}
+			}
+		}
+	}
+	if v, ok := extra["titles"] ; ok {
+		if !isNil(v) {
+			arr := v.([]interface{})
+			if len(arr) > 0 {
+				for i := 0; i < len(arr); i++ {
+					item := arr[i]
+					t.Extra.Titles = append(t.Extra.Titles, item.(string))
+				}
+			}
+		}
+	}
 }
 
 func (t *FreeTask) SetFinished(status int, errorMsg string) {

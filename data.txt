@@ -1,44 +1,4 @@
-package tmpl
 
-import (
-	"bufio"
-	"encoding/base64"
-	"fmt"
-	"github.com/dustin/go-humanize"
-	"math/rand"
-	"os"
-	"strconv"
-)
-
-type WpPost struct {
-	Title string
-	Content string
-	Url string
-	AskedBy string
-	Text string
-	Links []*LinkResult
-	CatId int
-	Image string
-	Date string
-}
-
-type LinkResult struct {
-	Link string
-	Image []byte
-	Src string
-	Author string
-	Title string
-	Description string
-	GlobalRank int32
-	PageViews string
-	CountryCode string
-	CountryName string
-	CountryImg string
-}
-
-func CreateWpPostTmpl(post WpPost) string {
-	randInt := rand.Intn(90) + 9
-	tmpl := `
 		<style>
 		.ca-list-item-title a{
 			color: #005edf;
@@ -61,12 +21,12 @@ func CreateWpPostTmpl(post WpPost) string {
 				<div class="ca-header-content">
 					<div class="ca-header-user">
 						<figure style="background: url('/wp-content/uploads/2021/02/default.jpg') no-repeat center / cover;"></figure>
-						<p class="ca-header-by">Asked by: ` + post.AskedBy + `</p>
+						<p class="ca-header-by">Asked by: Randi Hagenes</p>
 						<div class="ca-header-tag red">Questioner</div>
 						<div class="ca-header-tag blue">General</div>
 					</div>
-					<h1 class="ca-header-title">` + post.Title + `</h1>
-					<p class="ca-header-description">` + post.Content + `</p>
+					<h1 class="ca-header-title">Test Key virtual reality перевод</h1>
+					<p class="ca-header-description">Key virtual reality перевод</p>
 					<div class="ca-header-date">
 						<img src="/wp-content/uploads/2021/02/date.png" />
 						<p>Last Updated: [post_published]</p>
@@ -78,7 +38,7 @@ func CreateWpPostTmpl(post WpPost) string {
 							<path d="M286.935 197.287L159.028 69.381c-3.613-3.617-7.895-5.424-12.847-5.424s-9.233 1.807-12.85 5.424L5.424 197.287C1.807 200.904 0 205.186 0 210.134s1.807 9.233 5.424 12.847c3.621 3.617 7.902 5.425 12.85 5.425h255.813c4.949 0 9.233-1.808 12.848-5.425 3.613-3.613 5.427-7.898 5.427-12.847s-1.814-9.23-5.427-12.847z"></path>
 						</svg>
 					</a>
-					<p>` + strconv.Itoa(randInt) + `</p>
+					<p>70</p>
 					<a href="#" class="downvote">
 						<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 292.362 292.362">
 							<path d="M286.935 69.377c-3.614-3.617-7.898-5.424-12.848-5.424H18.274c-4.952 0-9.233 1.807-12.85 5.424C1.807 72.998 0 77.279 0 82.228c0 4.948 1.807 9.229 5.424 12.847l127.907 127.907c3.621 3.617 7.902 5.428 12.85 5.428s9.233-1.811 12.847-5.428L286.935 95.074c3.613-3.617 5.427-7.898 5.427-12.847 0-4.948-1.814-9.229-5.427-12.85z"></path>
@@ -87,42 +47,36 @@ func CreateWpPostTmpl(post WpPost) string {
 				</div>
 			</div>
 			<div class="ca-text">
-				` + post.Text + `
+				Test Key virtual reality перевод
 			</div>
-			<div class="ca-list">`
-
-	links := post.Links
-	if len(links) > 0 {
-		for _, link := range links {
-			globalRank := humanize.Comma(int64(link.GlobalRank))
-			tmpl += `
+			<div class="ca-list">
 				<div class="ca-list-item">
 					<div class="ca-list-item-row">
-						<a class="ca-list-item-img" href="#"><img style="max-width: 230px" src="` + link.Src + `" /></a>
+						<a class="ca-list-item-img" href="#"><img style="max-width: 230px" src="https://nakae-gardening.com/wp-content/uploads/2021/04/efngfnjmeeufrclzntcw.png" /></a>
 						<div class="ca-list-item-content">
 							<div class="ca-list-item-user">
 								<figure style="background: url('/wp-content/uploads/2021/02/default.jpg') no-repeat center / cover;"></figure>
-								<p class="ca-list-item-by">Asked by: ` + link.Author + `</p>
+								<p class="ca-list-item-by">Asked by: Glenna Wolf</p>
 								<div class="ca-list-item-tag">Explainer</div>
 							</div>
 							<p class="ca-list-item-title">
-								<a rel="nofollow" href="` + link.Link + `" target="_blank">` + link.Title + `</a>
+								<a href="https://context.reverso.net/%D0%BF%D0%B5%D1%80%D0%B5%D0%B2%D0%BE%D0%B4/%D0%B0%D0%BD%D0%B3%D0%BB%D0%B8%D0%B9%D1%81%D0%BA%D0%B8%D0%B9-%D1%80%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9/virtual+reality" target="_blank">virtual reality - Перевод на русский - примеры английский ...Virtual realityImmersive virtual realityПеревод ", virtual reality,"Перевод "there's virtual reality"A virtual reality</a>
 							</p>
-							<p class="ca-list-item-link">` + link.Link + `</p>
-							<p class="ca-list-item-text">` + link.Description + `</p>
+							<p class="ca-list-item-link">https://context.reverso.net/%D0%BF%D0%B5%D1%80%D0%B5%D0%B2%D0%BE%D0%B4/%D0%B0%D0%BD%D0%B3%D0%BB%D0%B8%D0%B9%D1%81%D0%BA%D0%B8%D0%B9-%D1%80%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9/virtual+reality</p>
+							<p class="ca-list-item-text">Reverso.Net : Free  Online Translation In French, Spanish, Italian, German, Russian, Portuguese, Hebrew, Japanese, English.</p>
 						</div>
 					</div>
 					<div class="ca-list-item-info">
 						<div class="ca-list-item-info-item">
-							<p class="ca-list-item-info-item-value"><span style="background: #f0ad4e;">` + globalRank + `</span></p>
+							<p class="ca-list-item-info-item-value"><span style="background: #f0ad4e;">312</span></p>
 							<p class="ca-list-item-info-item-text">Global Rank</p>
 						</div>
 						<div class="ca-list-item-info-item">
-							<p class="ca-list-item-info-item-value"><span style="background: #495b79;">` + link.PageViews + `</span></p>
+							<p class="ca-list-item-info-item-value"><span style="background: #495b79;">1</span></p>
 							<p class="ca-list-item-info-item-text">Pageviews</p>
 						</div>
 						<div class="ca-list-item-info-item">
-							<p class="ca-list-item-info-item-value">` + ConvertFlag(link.CountryImg) + ` <span style="color: #000;">` + link.CountryName + `</span></p>
+							<p class="ca-list-item-info-item-value"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQEAYAAABPYyMiAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAQElEQVRIS2NgGAUMkya5uf3/T4he+fu21cEZ/wmC93d36e1T/P//3DltbXNzwvSoA0YdMOqAUQeMOmAwOGCEAwCSI+0KMfXp/AAAAABJRU5ErkJggg==" /> <span style="color: #000;">Italy</span></p>
 							<p class="ca-list-item-info-item-text">Top Country</p>
 						</div>
 						<div class="ca-list-item-info-item">
@@ -135,51 +89,8 @@ func CreateWpPostTmpl(post WpPost) string {
 						</div>
 					</div>
 				</div>
-			`
-		}
-	}
-				tmpl += `
+			
 			</div>
 		</div>
 		<!-- /wp:html -->
-	`
-
-	return tmpl
-}
-
-
-func Exists(name string) bool {
-	if _, err := os.Stat(name); err != nil {
-		if os.IsNotExist(err) {
-			return false
-		}
-	}
-	return true
-}
-
-func ConvertFlag(country string) string {
-	if !Exists("./tmpl/png/" + country) {
-		return ""
-	}
-	imgFile, err := os.Open("./tmpl/png/" + country) // a QR code image
-
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-
-	defer imgFile.Close()
-
-	fInfo, _ := imgFile.Stat()
-	var size int64 = fInfo.Size()
-	buf := make([]byte, size)
-
-	fReader := bufio.NewReader(imgFile)
-	fReader.Read(buf)
-
-	imgBase64Str := base64.StdEncoding.EncodeToString(buf)
-
-	img2html := "<img src=\"data:image/png;base64," + imgBase64Str + "\" />"
-
-	return img2html
-}
+	

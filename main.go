@@ -2,11 +2,8 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"linksparser/config"
 	"linksparser/wordpress"
-	"log"
-	"strconv"
 	"time"
 
 	//"os"
@@ -38,37 +35,41 @@ func main() {
 		//
 		//
 		//log.Fatal("")
-		links := []string{
+		//links := []string{
 			//"https://www.investopedia.com/terms/v/virtual-reality.asp",
 			//"https://www.iberdrola.com/innovation/virtual-reality",
 			//"https://arvr.google.com/vr/",
-			"https://www.pcmag.com/picks/the-best-vr-headsets",
+			//"https://www.pcmag.com/picks/the-best-vr-headsets",
 			//"http://45.67.59.191/home/data",
-		}
+		//}
 
 		go func() {
 			job := JobHandler{}
 			job.IsStart = true
 			if job.Browser.Init() {
-				for i := 0; i < len(links); i++ {
-					link := links[i]
-					buf, err := job.Browser.ScreenShot(link)
-					if err != nil {
-						fmt.Println("ERR.JobHandler.Run.Screenshot", err)
-					} else {
-						err = ioutil.WriteFile(CONF.ImgPath+"/"+strconv.Itoa(task.Id)+"-"+strconv.Itoa(i)+".jpg", *buf, 0644)
-						if err != nil {
-							fmt.Println("ERR.JobHandler.Run.Screenshot.2", err)
-						}
-						file, err := wp.UploadFile("", 0, buf, false)
-						if err != nil {
-							fmt.Println("ERR.JobHandler.Run.Screenshot.3", err)
-						}
-						log.Fatal(file)
+				//obj, _ := job.ExtractSimilarWebData("https://www.investopedia.com/terms/v/virtual-reality.asp")
+				//js, _ := json.Marshal(obj)
+				//fmt.Println(string(js))
+				fmt.Println(job.Run(0))
+				//for i := 0; i < len(links); i++ {
+				//	link := links[i]
+				//	buf, err := job.Browser.ScreenShot(link)
+				//	if err != nil {
+				//		fmt.Println("ERR.JobHandler.Run.Screenshot", err)
+				//	} else {
+				//		err = ioutil.WriteFile(CONF.ImgPath+"/"+strconv.Itoa(task.Id)+"-"+strconv.Itoa(i)+".jpg", *buf, 0644)
+				//		if err != nil {
+				//			fmt.Println("ERR.JobHandler.Run.Screenshot.2", err)
+				//		}
+				//		file, err := wp.UploadFile("", 0, buf, false)
+				//		if err != nil {
+				//			fmt.Println("ERR.JobHandler.Run.Screenshot.3", err)
+				//		}
+				//		log.Fatal(file)
 						//fmt.Print(job.ExtractSimilarWebData(link))
 						//time.Sleep(time.Second * time.Duration(rand.Intn(10)))
-					}
-				}
+					//}
+				//}
 			}
 		}()
 	}

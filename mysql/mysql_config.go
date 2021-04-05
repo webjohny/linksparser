@@ -14,6 +14,7 @@ type ConfigExtra struct {
 	CmdStreams string `json:"cmd_streams"`
 	Texts []string `json:"texts"`
 	Answers []string `json:"answers"`
+	Titles []string `json:"titles"`
 }
 
 func (m *Instance) GetConfig() Config {
@@ -93,6 +94,17 @@ func (c *Config) GetExtra() ConfigExtra {
 				for i := 0; i < len(arr); i++ {
 					item := arr[i]
 					Extra.Answers = append(Extra.Answers, item.(string))
+				}
+			}
+		}
+	}
+	if v, ok := extra["titles"] ; ok {
+		if !isNil(v) {
+			arr := v.([]interface{})
+			if len(arr) > 0 {
+				for i := 0; i < len(arr); i++ {
+					item := arr[i]
+					Extra.Titles = append(Extra.Titles, item.(string))
 				}
 			}
 		}

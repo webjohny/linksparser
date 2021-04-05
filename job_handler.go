@@ -75,18 +75,35 @@ type Engagments struct {
 
 type SimilarWebResp struct {
 	SiteName string `json:"SiteName"`
+	Description string `json:"Desc"`
 	Title string `json:"Title"`
 	Category string `json:"Category"`
 	CategoryRank CategoryRank `json:"CategoryRank"`
 	LargeScreenshot string `json:"LargeScreenshot"`
 	EstimatedMonthlyVisits map[string]int `json:"EstimatedMonthlyVisits"`
-	Description string `json:"Description"`
 	TopCountryShares []TopCountryShare `json:"Description"`
 	GlobalRank GlobalRank `json:"GlobalRank"`
 	CountryRank CountryRank `json:"CountryRank"`
 	IsSmall bool `json:"IsSmall"`
 	TrafficSources TrafficSources `json:"TrafficSources"`
 	Engagments Engagments `json:"Engagments"`
+}
+
+func checkHostInArrayLinks(items []*tmpl.LinkResult, link string) bool {
+	for _, v := range items {
+		existUrl, err := url.Parse(v.Link)
+		if err != nil {
+			return false
+		}
+		compareUrl, err := url.Parse(link)
+		if err != nil {
+			return false
+		}
+		if existUrl.Host == compareUrl.Host {
+			return true
+		}
+	}
+	return false
 }
 
 func (j *JobHandler) Run(parser int) (status bool, msg string) {
@@ -227,13 +244,15 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		hlcw0c.Find(".g").Each(func(y int, g *goquery.Selection) {
 			var res tmpl.LinkResult
 			res.Title = g.Find("h3").Text()
+			res.Description = g.Find(".aCOpRe").Find("span").Last().Text()
 			linkSel := g.Find(".yuRUbf").Find("a")
 			if linkSel != nil {
 				href, _ := linkSel.Attr("href")
-				res.Link = href
+				if href != "" && !checkHostInArrayLinks(links, href) {
+					res.Link = href
+					links = append(links, &res)
+				}
 			}
-
-			links = append(links, &res)
 		})
 	})
 
@@ -274,9 +293,41 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		fmt.Println(err)
 	}
 
+	params := map[string]string{
+		"keyword": j.task.Keyword,
+		"askedBy": wpPost.AskedBy,
+	}
+	configExtra := j.config.GetExtra()
+	extra := j.task.Extra
+	texts := extra.Texts
+	if len(texts) < 1 {
+		texts = configExtra.Texts
+	}
+	titles := extra.Titles
+	if len(titles) < 1 {
+		titles = configExtra.Titles
+	}
+	answers := extra.Answers
+	if len(answers) < 1 {
+		answers = configExtra.Answers
+	}
+	if len(texts) > 0 {
+		content := services.ArrayRand(texts)
+		wpPost.Content = services.SetTmpl(content, params)
+	}
+	if len(answers) > 0 {
+		answerText := services.ArrayRand(answers)
+		wpPost.Text = services.SetTmpl(answerText, params)
+	}
+	if len(titles) > 0 {
+		titleText := services.ArrayRand(titles)
+		wpPost.Title = services.SetTmpl(titleText, params)
+	}
+	wpPost.AskedBy = faker.FirstName() + " " + faker.LastName()
+
 	if len(links) > 0 {
-		//for i := 0; i < 1; i++ {
-		for i := 0; i < len(links); i++ {
+		for i := 0; i < 1; i++ {
+		//for i := 0; i < len(links); i++ {
 			res := links[i]
 			dsw, err := j.ExtractSimilarWebData(res.Link)
 			if err != nil {
@@ -303,9 +354,10 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 					res.Image = *buf
 				}
 				res.GlobalRank = dsw.GlobalRank.Rank
-				res.PageViews = dsw.Engagments.Visits
-				res.Title = dsw.Title
-				res.Description = dsw.Description
+				pageViews := strings.Split(dsw.Engagments.Visits, ".")
+				res.PageViews = pageViews[0]
+				//res.Title = strings.Title(dsw.Title)
+				res.Description = strings.Title(dsw.Description)
 				res.Author = faker.FirstName() + " " + faker.LastName()
 				if list != nil && len(list.Country) > 0 {
 					for _, country := range list.Country {
@@ -319,37 +371,21 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 				}
 				wpPost.Links = append(wpPost.Links, res)
 			}
-			time.Sleep(time.Second * time.Duration(rand.Intn(15)+3))
+
+			time.Sleep(time.Second * time.Duration(rand.Intn(10)+3))
 		}
 	}
 
-	params := map[string]string{
-		"keyword": j.task.Keyword,
-		"askedBy": wpPost.AskedBy,
-	}
-	configExtra := j.config.GetExtra()
-	extra := j.task.Extra
-	texts := extra.Texts
-	if len(texts) < 1 {
-		texts = configExtra.Texts
-	}
-	answers := extra.Answers
-	if len(answers) < 1 {
-		answers = configExtra.Answers
-	}
-	if len(texts) > 0 {
-		content := services.ArrayRand(texts)
-		wpPost.Content = services.SetTmpl(content, params)
-	}
-	if len(answers) > 0 {
-		answerText := services.ArrayRand(answers)
-		wpPost.Text = services.SetTmpl(answerText, params)
-	}
-
-	wpPost.Title = task.Keyword
-	wpPost.AskedBy = faker.FirstName() + " " + faker.LastName()
-
 	rendered := tmpl.CreateWpPostTmpl(wpPost)
+
+	//f, _ := os.Create("data.txt")
+	//
+	//defer f.Close()
+	//
+	//f.WriteString(rendered)
+	//
+	//fmt.Println("done")
+	//return
 
 	_, err =  MYSQL.AddResult(map[string]interface{}{
 		"keyword": wpPost.Title,
@@ -425,6 +461,7 @@ func (j *JobHandler) ExtractSimilarWebData(link string) (*SimilarWebResp, error)
 
 	var re = regexp.MustCompile(`(?m)^(.*?)\{(.*)\}.*`)
 	jsonResp = re.ReplaceAllString(jsonResp, "{$2}")
+	jsonResp = strings.Replace(jsonResp, `"Description"`, `"Desc"`, 1)
 	if jsonResp == "{}" {
 		return nil, nil
 	}
