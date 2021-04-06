@@ -387,15 +387,21 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	//fmt.Println("done")
 	//return
 
+	jsLinks, _ := json.Marshal(wpPost.Links)
+
 	_, err =  MYSQL.AddResult(map[string]interface{}{
+		"domain": task.Domain,
+		"site_id": task.SiteId,
+		"cat_id": task.CatId,
+		"task_id": task.Id,
 		"keyword": wpPost.Title,
 		"author": wpPost.AskedBy,
-		"links": wpPost.Links,
+		"links": string(jsLinks),
 		"text": wpPost.Text,
 		"content": wpPost.Content,
 	})
 	if err != nil {
-		fmt.Println("ERR.JobHandler.Run.AddResult")
+		fmt.Println("ERR.JobHandler.Run.AddResult", err)
 	}
 
 	// Отправляем заметку на сайт

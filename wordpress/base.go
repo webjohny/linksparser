@@ -164,7 +164,7 @@ func (w *Base) PreparePost(post map[string]interface{}) WpPost {
 	if !isNil(post["post_content"]){
 		wpPost.Content = post["post_content"].(string)
 	}
-	if !isNil(post["post_content"]){
+	if !isNil(post["post_title"]){
 		wpPost.Title = post["post_title"].(string)
 	}
 	if !isNil(post["post_name"]){
@@ -240,6 +240,7 @@ func (w *Base) GetPost(id int) WpPost {
 		return WpPost{}
 	}
 	res := result.(map[string]interface{})
+	fmt.Println(res)
 	post := w.PreparePost(res)
 
 	return post

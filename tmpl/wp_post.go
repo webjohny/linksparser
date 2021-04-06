@@ -23,17 +23,17 @@ type WpPost struct {
 }
 
 type LinkResult struct {
-	Link string
-	Image []byte
-	Src string
-	Author string
-	Title string
-	Description string
-	GlobalRank int32
-	PageViews string
-	CountryCode string
-	CountryName string
-	CountryImg string
+	Link string `json:"link"`
+	Image []byte `json:"-"`
+	Src string `json:"src"`
+	Author string `json:"author"`
+	Title string `json:"title"`
+	Description string `json:"description"`
+	GlobalRank int32 `json:"global_rank"`
+	PageViews string `json:"page_views"`
+	CountryCode string `json:"country_code"`
+	CountryName string `json:"country_name"`
+	CountryImg string `json:"country_img"`
 }
 
 func CreateWpPostTmpl(post WpPost) string {
