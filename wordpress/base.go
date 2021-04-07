@@ -1,26 +1,15 @@
 package wordpress
 
 import (
-	"encoding/base64"
 	"fmt"
 	"github.com/gosimple/slug"
-	"github.com/h2non/filetype"
-	"github.com/kolo/xmlrpc"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
-	"path"
 	"reflect"
 	"strconv"
-	"strings"
 	"time"
 )
-
-type BaseCall interface {
-	GetMethod() string
-	GetArgs(user string, pwd string) interface{}
-}
 
 
 type WpCat struct {
@@ -101,15 +90,10 @@ func (w *Base) Connect(url string, username string, password string, blogId int)
 		url += `/wp-admin/conn.php`
 	}
 
-	c, err := NewClient(url, UserInfo{
+	c := NewClient(url, UserInfo{
 		username,
 		password,
 	})
-	if err != nil {
-		w.err = err
-		log.Println("Wordpress.Connect.HasError", err)
-		return nil
-	}
 	w.client = c
 	w.cnf = []interface{}{
 		blogId, username, password,
@@ -178,9 +162,12 @@ func (w *Base) PreparePost(post map[string]interface{}) WpPost {
 
 func (w *Base) GetCats() []WpCat {
 	var result interface{}
-	err := w.client.Client.Call(`wp.getTerms`, append(
+	result, err := w.client.Call(`wp.getTerms`, struct {
+		BlogId int `xml:"blogId"`
+		Username string `xml`
+	}{}append(
 		w.cnf, "category",
-	), &result)
+	))
 	if err != nil {
 		w.err = err
 		log.Println("Wordpress.GetCats.HasError", err)
@@ -197,6 +184,7 @@ func (w *Base) GetCats() []WpCat {
 	}
 	return cats
 }
+
 
 func (w *Base) NewTerm(name string, taxonomy string, slug string, description string, parentId int) int {
 	params := map[string]string{
@@ -216,90 +204,31 @@ func (w *Base) NewTerm(name string, taxonomy string, slug string, description st
 		params["parent"] = strconv.Itoa(parentId)
 	}
 
-	var result interface{}
-	err := w.client.Client.Call(`wp.newTerm`, append(
+	result, err := w.client.Call(`wp.newTerm`, append(
 		w.cnf, params,
-	), &result)
+	))
 	if err != nil {
 		w.err = err
 		log.Println("Wordpress.NewTerm.HasError", err)
 		return 0
 	}
 
-	return result.(int)
+	fmt.Println(result)
+
+	return 23
 }
 
 func (w *Base) GetPost(id int) WpPost {
-	var result interface{}
-	err := w.client.Client.Call(`wp.getPost`, append(
-		w.cnf, id,
-	), &result)
-	if err != nil {
-		w.err = err
-		log.Println("Wordpress.GetPost.HasError", err)
-		return WpPost{}
-	}
-	res := result.(map[string]interface{})
-	fmt.Println(res)
-	post := w.PreparePost(res)
-
-	return post
+	return WpPost{}
 }
 
 func (w *Base) EditPost(id int, title string, content string) bool {
-	params := map[string]string{}
-	if title != "" {
-		params["post_title"] = title
-	}
-	if content != "" {
-		params["post_content"] = content
-	}
-	var result interface{}
-	err := w.client.Client.Call(`wp.editPost`, append(
-		w.cnf, id, params,
-	), &result)
-	if err != nil {
-		w.err = err
-		log.Println("Wordpress.EditPost.HasError", err)
-		return false
-	}
-	return result.(bool)
+	return true
 }
 
 func (w *Base) NewPost(title string, content string, catId int, photoId int) int {
-	params := map[string]interface{}{
-		"post_type": "post",
-		"post_status": "publish",
-	}
-	if title != "" {
-		params["post_title"] = title
-		params["post_name"] = slug.Make(title)
-	}
-	if content != "" {
-		params["post_content"] = content
-	}
-	if photoId > 0 {
-		params["post_thumbnail"] = photoId
-	}
-	if catId > 0 {
-		params["terms"] = map[string][]int{
-			"category": {catId},
-		}
-	}
 
-	var result interface{}
-	err := w.client.Client.Call(`wp.newPost`, append(
-		w.cnf, params,
-	), &result)
-
-	if err != nil {
-		w.err = err
-		log.Println("Wordpress.NewPost.HasError", err)
-		return 0
-	}
-
-	id, _ := strconv.Atoi(result.(string))
-	return id
+	return 12
 }
 
 func (w *Base) CheckConn() bool {
@@ -307,86 +236,9 @@ func (w *Base) CheckConn() bool {
 }
 
 func (w *Base) UploadFile(url string, postId int, bytes *[]byte, encoded bool) (WpImage, error) {
-	var image WpImage
-	var err error
-	var name string
 
-	if bytes == nil {
-		if !encoded {
-			resp, _ := http.Get(url)
-			defer resp.Body.Close()
 
-			bts, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				log.Println("Wordpress.UploadFile.HasError", err)
-				return image, err
-			}
-			bytes = &bts
-		} else {
-			bts, err := base64.StdEncoding.DecodeString(url)
-			if err != nil {
-				log.Println("Wordpress.UploadFile.HasError.1", err)
-				return image, err
-			}
-			bytes = &bts
-		}
-	}
-
-	kind, _ := filetype.Match(*bytes)
-	if kind == filetype.Unknown {
-		fmt.Println("Wordpress.UploadFile.HasError.2", "Unknown file type")
-		return image, nil
-	}
-
-	name = randStringRunes(20) + "." + kind.Extension
-
-	mime := http.DetectContentType(*bytes)
-	if !strings.Contains(mime, "image") {
-		return image, nil
-	}
-
-	encodedImg := base64.StdEncoding.EncodeToString(*bytes)
-
-	params := map[string]interface{}{
-		"overwrite": true,
-		"name": name,
-		"type": mime,
-		"bits": xmlrpc.Base64(encodedImg),
-	}
-
-	if postId != 0 {
-		params["post_id"] = postId
-	}
-
-	var response map[string]interface{}
-	err = w.client.Client.Call(`wp.uploadFile`, append(
-		w.cnf, params,
-	), &response)
-	if err != nil {
-		log.Println("Wordpress.UploadFile.3.HasError", err)
-		w.err = err
-	}else if response != nil{
-		image.Id = toInt(response["id"].(string))
-		image.Url = response["link"].(string)
-		title := path.Base(response["url"].(string))
-		image.UrlMedium = response["link"].(string)
-		if response["metadata"] != nil {
-			metadata := response["metadata"].(map[string]interface{})
-			if metadata["sizes"] != nil {
-				sizes := metadata["sizes"].(map[string]interface{})
-				if sizes["medium"] != nil {
-					medium := sizes["medium"].(map[string]interface{})
-					if medium["file"] != nil {
-						file := medium["file"].(string)
-						image.UrlMedium = strings.Replace(image.UrlMedium, title, file, 1)
-					}
-				}
-			}
-		}
-		return image, err
-	}
-
-	return image, nil
+	return WpImage{}, nil
 }
 
 func (w *Base) CatIdByName(name string) int {

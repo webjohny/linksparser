@@ -132,7 +132,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	}
 	taskId = task.Id
 	task.Domain = task.GetRandDomain()
-	//task.SetLog("Задача #" + strconv.Itoa(taskId) + " с запросом (" + task.Keyword + ") взята в работу")
+	task.SetLog("Задача #" + strconv.Itoa(taskId) + " с запросом (" + task.Keyword + ") взята в работу")
 
 	j.task = task
 
@@ -326,8 +326,8 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	wpPost.AskedBy = faker.FirstName() + " " + faker.LastName()
 
 	if len(links) > 0 {
-		//for i := 0; i < 1; i++ {
-		for i := 0; i < len(links); i++ {
+		for i := 0; i < 1; i++ {
+		//for i := 0; i < len(links); i++ {
 			res := links[i]
 			dsw, err := j.ExtractSimilarWebData(res.Link)
 			if err != nil {

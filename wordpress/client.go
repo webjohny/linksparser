@@ -1,20 +1,15 @@
 package wordpress
 
 import (
+	"bytes"
+	"github.com/divan/gorilla-xmlrpc/xml"
 	"io/ioutil"
 	"log"
 	"net/http"
-
-	"github.com/kolo/xmlrpc"
 )
 
 type HttpRT struct {
 	http.RoundTripper
-}
-
-// NewHttpRT return a http.RoundTripper can print the request body
-func NewHttpRT(t http.RoundTripper) http.RoundTripper {
-	return &HttpRT{t}
 }
 
 // RoundTrip implement a http.RoundTripper can print the request body
@@ -36,7 +31,7 @@ func (t HttpRT) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // Client Packaging the xmlrpc client
 type Client struct {
-	*xmlrpc.Client
+	Url string
 	UserInfo
 }
 
@@ -46,27 +41,21 @@ type UserInfo struct {
 	Password string
 }
 
-// NewDefaultClient default implement a http.RoundTripper can print the request body
-func NewDefaultClient(url string, info UserInfo) (*Client, error) {
-	t := NewHttpRT(http.DefaultTransport)
-	c, err := xmlrpc.NewClient(url, t)
-	return &Client{Client: c, UserInfo: info}, err
-}
-
 // NewClient without  http.RoundTripper
-func NewClient(url string, info UserInfo) (*Client, error) {
-	c, err := xmlrpc.NewClient(url, nil)
-	return &Client{Client: c, UserInfo: info}, err
-}
-
-// NewCustomizeClient you can Customize your  http.RoundTripper
-func NewCustomizeClient(url string, t http.RoundTripper, info UserInfo) (*Client, error) {
-	c, err := xmlrpc.NewClient(url, t)
-	return &Client{Client: c, UserInfo: info}, err
+func NewClient(url string, info UserInfo) *Client {
+	return &Client{Url: url, UserInfo: info}
 }
 
 // Call abstract to proxy xmlrpc call
-func (c *Client) Call(baseCall BaseCall) (result interface{}, err error) {
-	err = c.Client.Call(baseCall.GetMethod(), baseCall.GetArgs(c.Username, c.Password), &result)
-	return result, err
+func (c *Client) Call(method string, args interface{}) (reply struct{Message string}, err error) {
+	buf, _ := xml.EncodeClientRequest(method, &args)
+
+	resp, err := http.Post(c.Url, "text/xml", bytes.NewBuffer(buf))
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	err = xml.DecodeClientResponse(resp.Body, &reply)
+	return reply, err
 }

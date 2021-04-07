@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"linksparser/config"
 	"linksparser/wordpress"
+	"log"
 	"time"
 
 	//"os"
@@ -25,6 +27,9 @@ func main() {
 
 	// Connect to MysqlDB
 	MYSQL = mysql.CreateConnection(CONF.MysqlHost, CONF.MysqlDb, CONF.MysqlLogin, CONF.MysqlPass)
+
+	postWP()
+	log.Fatal("dsa")
 
 	if CONF.Env == "local" {
 		task := MYSQL.GetFreeTask(937675)
@@ -85,4 +90,38 @@ func main() {
 	routes.Run()
 
 	time.Sleep(time.Minute)
+}
+
+func postWP() {
+	task := MYSQL.GetFreeTask(1097080)
+	wp := wordpress.Base{}
+	wp.Connect(`http://k-pnet.com`, task.Login, task.Password, 1)
+
+
+	title := "Is it bad to not walk my dog for a day?"
+	content, err := ioutil.ReadFile("data.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Convert []byte to string and print to screen
+	text := string(content)
+
+	text = "Hello world!"
+	fmt.Println(title)
+	fmt.Println(text)
+
+	//postId := wp.NewPost(title, text, 1, 12)
+	//var fault bool
+	//if postId > 0 {
+	//	post := wp.GetPost(postId)
+	//	if post.Id > 0 {
+	//		wp.EditPost(postId, title, text)
+	//	}else{
+	//		fault = true
+	//	}
+	//}else{
+	//	fault = true
+	//}
+	log.Fatal(wp.GetCats())
 }
