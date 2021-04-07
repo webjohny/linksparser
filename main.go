@@ -72,15 +72,13 @@ func main() {
 				//}
 			}
 		}()
+	} else if MYSQL.CountWorkingTasks() > 0 {
+		conf := MYSQL.GetConfig()
+		extra := conf.GetExtra()
+		if extra.CountStreams > 0 {
+			STREAMS.StartLoop(extra.CountStreams, extra.LimitStreams, extra.CmdStreams)
+		}
 	}
-
-	//else if MYSQL.CountWorkingTasks() > 0 {
-	//	conf := MYSQL.GetConfig()
-	//	extra := conf.GetExtra()
-	//	if extra.CountStreams > 0 {
-	//		STREAMS.StartLoop(extra.CountStreams, extra.LimitStreams, extra.CmdStreams)
-	//	}
-	//}
 
 
 	routes := Routes{}

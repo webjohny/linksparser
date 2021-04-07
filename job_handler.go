@@ -326,8 +326,8 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	wpPost.AskedBy = faker.FirstName() + " " + faker.LastName()
 
 	if len(links) > 0 {
-		for i := 0; i < 1; i++ {
-		//for i := 0; i < len(links); i++ {
+		//for i := 0; i < 1; i++ {
+		for i := 0; i < len(links); i++ {
 			res := links[i]
 			dsw, err := j.ExtractSimilarWebData(res.Link)
 			if err != nil {
@@ -335,6 +335,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 				task.SetLog("Ошибка загрузки на ресурсе: " + res.Link)
 				continue
 			}
+			task.SetLog("Данные получены по ресурсу: " + res.Link)
 
 			if dsw != nil {
 				buf, err := j.Browser.ScreenShot(res.Link)
@@ -353,6 +354,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 					}
 					res.Image = *buf
 				}
+				task.SetLog("Создался скриншот")
 				res.GlobalRank = dsw.GlobalRank.Rank
 				pageViews := strings.Split(dsw.Engagments.Visits, ".")
 				res.PageViews = pageViews[0]
@@ -372,7 +374,9 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 				wpPost.Links = append(wpPost.Links, res)
 			}
 
-			time.Sleep(time.Second * time.Duration(rand.Intn(10)+3))
+			num := rand.Intn(10)+3
+			task.SetLog("Данные собраны. Задержка " + strconv.Itoa(num) + " сек.")
+			time.Sleep(time.Second * time.Duration(num))
 		}
 	}
 
@@ -403,6 +407,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	if err != nil {
 		fmt.Println("ERR.JobHandler.Run.AddResult", err)
 	}
+	task.SetLog("Добавлен результат в базу данных")
 
 	// Отправляем заметку на сайт
 	postId := wp.NewPost(wpPost.Title, rendered, wpPost.CatId, 12)
@@ -418,7 +423,6 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		fault = true
 	}
 	
-
 	//fmt.Println(wpPost.Links)
 	//fmt.Println(searchesRelated)
 	//task.FreeTask()
