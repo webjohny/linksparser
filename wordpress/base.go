@@ -1,7 +1,6 @@
 package wordpress
 
 import (
-	"fmt"
 	"github.com/gosimple/slug"
 	"log"
 	"math/rand"
@@ -34,10 +33,14 @@ type WpPost struct {
 	Parent int
 	Terms []WpCat
 }
-
+type CnfBase struct {
+	BlogId int `xml:"blogId"`
+	Username string `xml:"username"`
+	Password string `xml:"password"`
+}
 type Base struct {
 	client *Client
-	cnf []interface{}
+	cnf CnfBase
 	err error
 }
 
@@ -47,6 +50,15 @@ type WpImage struct {
 	UrlMedium string
 }
 
+type GetPostsFilter struct {
+	PostType string `xml:"post_type"`
+}
+
+type GetPosts struct {
+	BlogId int `xml:"blogId"`
+	Username string `xml:"username"`
+	Password string `xml:"password"`
+}
 
 func isNil(i interface{}) bool {
 	return i == nil || (reflect.ValueOf(i).Kind() == reflect.Ptr && reflect.ValueOf(i).IsNil())
@@ -95,7 +107,7 @@ func (w *Base) Connect(url string, username string, password string, blogId int)
 		password,
 	})
 	w.client = c
-	w.cnf = []interface{}{
+	w.cnf = CnfBase{
 		blogId, username, password,
 	}
 	return c
@@ -162,12 +174,15 @@ func (w *Base) PreparePost(post map[string]interface{}) WpPost {
 
 func (w *Base) GetCats() []WpCat {
 	var result interface{}
-	result, err := w.client.Call(`wp.getTerms`, struct {
-		BlogId int `xml:"blogId"`
-		Username string `xml`
-	}{}append(
-		w.cnf, "category",
-	))
+	var data interface{}
+
+
+	log.Fatal(reflect.ValueOf(data).Elem())
+	result, err := w.client.Call(`wp.getTerms`, GetPosts{
+		w.cnf.BlogId,
+		w.cnf.Username,
+		w.cnf.Password,
+	})
 	if err != nil {
 		w.err = err
 		log.Println("Wordpress.GetCats.HasError", err)
@@ -204,16 +219,16 @@ func (w *Base) NewTerm(name string, taxonomy string, slug string, description st
 		params["parent"] = strconv.Itoa(parentId)
 	}
 
-	result, err := w.client.Call(`wp.newTerm`, append(
-		w.cnf, params,
-	))
-	if err != nil {
-		w.err = err
-		log.Println("Wordpress.NewTerm.HasError", err)
-		return 0
-	}
-
-	fmt.Println(result)
+	//result, err := w.client.Call(`wp.newTerm`, append(
+	//	w.cnf, params,
+	//))
+	//if err != nil {
+	//	w.err = err
+	//	log.Println("Wordpress.NewTerm.HasError", err)
+	//	return 0
+	//}
+	//
+	//fmt.Println(result)
 
 	return 23
 }
