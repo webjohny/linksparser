@@ -40,17 +40,18 @@ func NewClient(url *url.URL, info Credentials) (*Client, error) {
 // Call abstract to proxy xmlrpc call
 func (c *Client) Get(schema string, params *interface{}) (result *Response, err error) {
 	var resp *http.Response
-	baseURL.Path += schema
+	var path string
+	path += schema
 
 	if !isNil(params) {
 		v, _ := query.Values(params)
 		if v != nil {
-			baseURL.Path += "?" + v.Encode()
+			path += "?" + v.Encode()
 		}
 	}
 
 	// Create a new request using http
-	req, err := http.NewRequest("GET", baseURL.String(), nil)
+	req, err := http.NewRequest("GET", baseURL.String() + path, nil)
 
 	// add authorization header to the req
 	req.Header.Add("Authorization", "Basic cHJvZ2VyOnF3ZXJ0eTEyMzQ1")
@@ -79,15 +80,15 @@ func (c *Client) Get(schema string, params *interface{}) (result *Response, err 
 // Call abstract to proxy xmlrpc call
 func (c *Client) Post(schema string, params interface{}) (result *Response, err error) {
 	var resp *http.Response
-	baseURL.Path += schema
+	var path string
+	path += schema
 
 	var requestBody []byte
 	if !isNil(params) {
 		requestBody, _ = json.Marshal(params)
 	}
-
 	// Create a new request using http
-	req, err := http.NewRequest("POST", baseURL.String(), bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", baseURL.String() + path, bytes.NewBuffer(requestBody))
 
 	// add authorization header to the req
 	req.Header.Add("Authorization", "Basic cHJvZ2VyOnF3ZXJ0eTEyMzQ1")

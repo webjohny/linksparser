@@ -245,13 +245,15 @@ func (w *Base) NewPost(title string, content string, catId int, photoId int) int
 		params["categories"] = []int{catId}
 	}
 
-	resp, err := w.client.Post("newPost", params)
+	resp, err := w.client.Post("posts", params)
 
 	if err != nil {
 		w.err = err
 		log.Println("Wordpress.NewPost.HasError", err)
 		return 0
 	}
+
+	fmt.Println(resp.Body)
 
 	id, _ := strconv.Atoi(resp.Body)
 	return id
