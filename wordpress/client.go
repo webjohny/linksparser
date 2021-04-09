@@ -2,60 +2,113 @@ package wordpress
 
 import (
 	"bytes"
-	"github.com/divan/gorilla-xmlrpc/xml"
+	"encoding/json"
+	"github.com/google/go-querystring/query"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 )
-
-type HttpRT struct {
-	http.RoundTripper
-}
-
-// RoundTrip implement a http.RoundTripper can print the request body
-func (t HttpRT) RoundTrip(req *http.Request) (*http.Response, error) {
-	// you can customize  to get more control over connection options
-	// example: print the request body
-
-	b, err := req.GetBody()
-	if err != nil {
-		log.Println(err)
-	}
-	r, err := ioutil.ReadAll(b)
-	if err != nil {
-		log.Println(err)
-	}
-	log.Println(string(r))
-	return t.RoundTripper.RoundTrip(req)
-}
 
 // Client Packaging the xmlrpc client
 type Client struct {
-	Url string
-	UserInfo
+	Url *url.URL
+	Credentials
 }
 
 // UserInfo wordpress's username and password
-type UserInfo struct {
+type Credentials struct {
 	Username string
 	Password string
 }
 
+type Response struct {
+	Body string
+	Status string
+	StatusCode int
+}
+
+var (
+	baseURL = &url.URL{Host: "testwp.com", Scheme: "http", Path: "/wp-json/wp/v2/"}
+)
+
 // NewClient without  http.RoundTripper
-func NewClient(url string, info UserInfo) *Client {
-	return &Client{Url: url, UserInfo: info}
+func NewClient(url *url.URL, info Credentials) (*Client, error) {
+	return &Client{Url: url, Credentials: info}, nil
 }
 
 // Call abstract to proxy xmlrpc call
-func (c *Client) Call(method string, args interface{}) (reply struct{Message string}, err error) {
-	buf, _ := xml.EncodeClientRequest(method, &args)
+func (c *Client) Get(schema string, params *interface{}) (result *Response, err error) {
+	var resp *http.Response
+	baseURL.Path += schema
 
-	resp, err := http.Post(c.Url, "text/xml", bytes.NewBuffer(buf))
+	if !isNil(params) {
+		v, _ := query.Values(params)
+		if v != nil {
+			baseURL.Path += "?" + v.Encode()
+		}
+	}
+
+	// Create a new request using http
+	req, err := http.NewRequest("GET", baseURL.String(), nil)
+
+	// add authorization header to the req
+	req.Header.Add("Authorization", "Basic cHJvZ2VyOnF3ZXJ0eTEyMzQ1")
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send req using http Client
+	client := &http.Client{}
+	resp, err = client.Do(req)
 	if err != nil {
-		return
+		log.Println("Error on response.\n[ERROR] -", err)
 	}
 	defer resp.Body.Close()
 
-	err = xml.DecodeClientResponse(resp.Body, &reply)
-	return reply, err
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("Error while reading the response bytes:", err)
+	}
+
+	return &Response{
+		Status: resp.Status,
+		StatusCode: resp.StatusCode,
+		Body: string(body),
+	}, err
+}
+
+// Call abstract to proxy xmlrpc call
+func (c *Client) Post(schema string, params interface{}) (result *Response, err error) {
+	var resp *http.Response
+	baseURL.Path += schema
+
+	var requestBody []byte
+	if !isNil(params) {
+		requestBody, _ = json.Marshal(params)
+	}
+
+	// Create a new request using http
+	req, err := http.NewRequest("POST", baseURL.String(), bytes.NewBuffer(requestBody))
+
+	// add authorization header to the req
+	req.Header.Add("Authorization", "Basic cHJvZ2VyOnF3ZXJ0eTEyMzQ1")
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send req using http Client
+	client := &http.Client{}
+	resp, err = client.Do(req)
+	if err != nil {
+		log.Println("Error on response.\n[ERROR] -", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("Error while reading the response bytes:", err)
+	}
+
+	return &Response{
+		Status: resp.Status,
+		StatusCode: resp.StatusCode,
+		Body: string(body),
+	}, err
 }

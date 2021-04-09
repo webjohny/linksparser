@@ -10,7 +10,7 @@ import (
 	"linksparser/mysql"
 	"linksparser/services"
 	"linksparser/tmpl"
-	"linksparser/wordpress"
+	"linksparser/wordpress_xmlrpc"
 	"log"
 	"math/rand"
 	"net/url"
@@ -220,7 +220,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 
 	task.SetLog(`Подключение к ` + task.Domain)
 
-	wp := wordpress.Base{}
+	wp := wordpress_xmlrpc.Base{}
 	wp.Connect(`https://` + task.Domain, task.Login, task.Password, 1)
 	if !wp.CheckConn() {
 		task.SetLog("Не получилось подключится к wp xmlrpc (https://" + task.Domain + " - " + task.Login + " / " + task.Password + ")")

@@ -1,5 +1,4 @@
-
-		<style>
+        <style>
 		.ca-list-item-title a{
 			color: #005edf;
 			opacity: 0.8;

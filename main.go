@@ -95,8 +95,7 @@ func main() {
 func postWP() {
 	task := MYSQL.GetFreeTask(1097080)
 	wp := wordpress.Base{}
-	wp.Connect(`http://k-pnet.com`, task.Login, task.Password, 1)
-
+	wp.Connect(`http://testwp.com`, task.Login, task.Password, 1)
 
 	title := "Is it bad to not walk my dog for a day?"
 	content, err := ioutil.ReadFile("data.txt")
@@ -123,5 +122,5 @@ func postWP() {
 	//}else{
 	//	fault = true
 	//}
-	log.Fatal(wp.GetCats())
+	log.Fatal(wp.NewPost("wpPost.Title", text, 1, 12))
 }

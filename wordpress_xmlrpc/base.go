@@ -1,8 +1,7 @@
-package wordpress
+package wordpress_xmlrpc
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"github.com/gosimple/slug"
 	"github.com/h2non/filetype"
@@ -11,12 +10,18 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"net/url"
+	"path"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 )
+
+type BaseCall interface {
+	GetMethod() string
+	GetArgs(user string, pwd string) interface{}
+}
+
 
 type WpCat struct {
 	Description string `json:"description"`
@@ -76,22 +81,40 @@ func toInt(value string) int {
 	return integer
 }
 
-func (w *Base) Connect(uri string, username string, password string, blogId int) *Client {
-//Path: "/wp-json/wp/v2/"
-	baseUrl, _ := url.Parse(uri)
-	baseUrl.Path = `/wp-json/wp/v2/`
-	client := Client{
-		baseUrl, Credentials{
-			username,
-			password,
-		},
-	}
-	resp, _ := client.Get("settings", nil)
+func (w *Base) Connect(url string, username string, password string, blogId int) *Client {
+
+	resp, _ := http.PostForm(url + `/wp-admin/conn.php`, nil)
 
 	if resp == nil || resp.StatusCode != 200 {
+		resp, _ = http.PostForm(url + `/xmlrpc2.php`, nil)
+		if resp == nil || resp.StatusCode != 200 {
+			resp, _ = http.PostForm(url + `/xmlrpc.php`, nil)
+			if resp == nil || resp.StatusCode != 200 {
+				return nil
+			}else{
+				url += `/xmlrpc.php`
+			}
+		}else{
+			url += `/xmlrpc2.php`
+		}
+	}else{
+		url += `/wp-admin/conn.php`
+	}
+
+	c, err := NewClient(url, UserInfo{
+		username,
+		password,
+	})
+	if err != nil {
+		w.err = err
+		log.Println("Wordpress.Connect.HasError", err)
 		return nil
 	}
-	return &client
+	w.client = c
+	w.cnf = []interface{}{
+		blogId, username, password,
+	}
+	return c
 }
 
 func (w *Base) GetError() error {
@@ -153,16 +176,25 @@ func (w *Base) PreparePost(post map[string]interface{}) WpPost {
 	return wpPost
 }
 
-
 func (w *Base) GetCats() []WpCat {
-	resp, err := w.client.Get(`categories`, nil)
+	var result interface{}
+	err := w.client.Client.Call(`wp.getTerms`, append(
+		w.cnf, "category",
+	), &result)
 	if err != nil {
 		w.err = err
 		log.Println("Wordpress.GetCats.HasError", err)
 	}
+	log.Fatal(result)
 	var cats []WpCat
-	if resp != nil || resp.Body != ""{
-		err = json.Unmarshal([]byte(resp.Body), &cats)
+	if result != nil {
+		res := result.([]interface{})
+		if len(res) > 0 {
+			for _, item := range res {
+				cat := item.(map[string]interface{})
+				cats = append(cats, w.PrepareCat(cat))
+			}
+		}
 	}
 	return cats
 }
@@ -185,28 +217,33 @@ func (w *Base) NewTerm(name string, taxonomy string, slug string, description st
 		params["parent"] = strconv.Itoa(parentId)
 	}
 
-	resp, err := w.client.Post(`categories`, params)
+	var result interface{}
+	err := w.client.Client.Call(`wp.newTerm`, append(
+		w.cnf, params,
+	), &result)
 	if err != nil {
 		w.err = err
 		log.Println("Wordpress.NewTerm.HasError", err)
 		return 0
 	}
-	id, _ :=  strconv.Atoi(resp.Body)
-	return id
+
+	return result.(int)
 }
 
 func (w *Base) GetPost(id int) WpPost {
-	resp, err := w.client.Post("posts/" + strconv.Itoa(id), nil)
+	var result interface{}
+	err := w.client.Client.Call(`wp.getPost`, append(
+		w.cnf, id,
+	), &result)
 	if err != nil {
 		w.err = err
 		log.Println("Wordpress.GetPost.HasError", err)
 		return WpPost{}
 	}
-	//res := result.(map[string]interface{})
-	//post := w.PreparePost(res)
+	res := result.(map[string]interface{})
+	post := w.PreparePost(res)
 
-	fmt.Println(resp)
-	return WpPost{}
+	return post
 }
 
 func (w *Base) EditPost(id int, title string, content string) bool {
@@ -217,35 +254,43 @@ func (w *Base) EditPost(id int, title string, content string) bool {
 	if content != "" {
 		params["post_content"] = content
 	}
-	var result *Response
-	result, err := w.client.Post(`editPost`, result)
+	var result interface{}
+	err := w.client.Client.Call(`wp.editPost`, append(
+		w.cnf, id, params,
+	), &result)
 	if err != nil {
 		w.err = err
 		log.Println("Wordpress.EditPost.HasError", err)
 		return false
 	}
-	return result.Body == "true"
+	return result.(bool)
 }
 
 func (w *Base) NewPost(title string, content string, catId int, photoId int) int {
 	params := map[string]interface{}{
-		"status": "publish",
+		"post_type": "post",
+		"post_status": "publish",
 	}
 	if title != "" {
-		params["title"] = title
-		params["slug"] = slug.Make(title)
+		params["post_title"] = title
+		params["post_name"] = slug.Make(title)
 	}
 	if content != "" {
-		params["content"] = content
+		params["post_content"] = content
 	}
 	if photoId > 0 {
-		//params["post_thumbnail"] = photoId
+		params["post_thumbnail"] = photoId
 	}
 	if catId > 0 {
-		params["categories"] = []int{catId}
+		params["terms"] = map[string][]int{
+			"category": {catId},
+		}
 	}
 
-	resp, err := w.client.Post("newPost", params)
+	var result interface{}
+	err := w.client.Client.Call(`wp.newPost`, append(
+		w.cnf, params,
+	), &result)
 
 	if err != nil {
 		w.err = err
@@ -253,7 +298,7 @@ func (w *Base) NewPost(title string, content string, catId int, photoId int) int
 		return 0
 	}
 
-	id, _ := strconv.Atoi(resp.Body)
+	id, _ := strconv.Atoi(result.(string))
 	return id
 }
 
@@ -313,30 +358,32 @@ func (w *Base) UploadFile(url string, postId int, bytes *[]byte, encoded bool) (
 		params["post_id"] = postId
 	}
 
-	var response *Response
-	response, err = w.client.Get(`wp.uploadFile`, nil)
+	var response map[string]interface{}
+	err = w.client.Client.Call(`wp.uploadFile`, append(
+		w.cnf, params,
+	), &response)
 	if err != nil {
 		log.Println("Wordpress.UploadFile.3.HasError", err)
 		w.err = err
 	}else if response != nil{
-		//image.Id = toInt(response["id"].(string))
-		//image.Url = response["link"].(string)
-		//title := path.Base(response["url"].(string))
-		//image.UrlMedium = response["link"].(string)
-		//if response["metadata"] != nil {
-		//	metadata := response["metadata"].(map[string]interface{})
-		//	if metadata["sizes"] != nil {
-		//		sizes := metadata["sizes"].(map[string]interface{})
-		//		if sizes["medium"] != nil {
-		//			medium := sizes["medium"].(map[string]interface{})
-		//			if medium["file"] != nil {
-		//				file := medium["file"].(string)
-		//				image.UrlMedium = strings.Replace(image.UrlMedium, title, file, 1)
-		//			}
-		//		}
-		//	}
-		//}
-		//return image, err
+		image.Id = toInt(response["id"].(string))
+		image.Url = response["link"].(string)
+		title := path.Base(response["url"].(string))
+		image.UrlMedium = response["link"].(string)
+		if response["metadata"] != nil {
+			metadata := response["metadata"].(map[string]interface{})
+			if metadata["sizes"] != nil {
+				sizes := metadata["sizes"].(map[string]interface{})
+				if sizes["medium"] != nil {
+					medium := sizes["medium"].(map[string]interface{})
+					if medium["file"] != nil {
+						file := medium["file"].(string)
+						image.UrlMedium = strings.Replace(image.UrlMedium, title, file, 1)
+					}
+				}
+			}
+		}
+		return image, err
 	}
 
 	return image, nil
