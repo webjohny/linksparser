@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bxcodec/faker"
+	"github.com/gosimple/slug"
 	"io/ioutil"
 	"linksparser/mysql"
 	"linksparser/services"
 	"linksparser/tmpl"
-	"linksparser/wordpress_xmlrpc"
+	"linksparser/wordpress"
 	"log"
 	"math/rand"
 	"net/url"
@@ -220,19 +221,23 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 
 	task.SetLog(`Подключение к ` + task.Domain)
 
-	wp := wordpress_xmlrpc.Base{}
-	wp.Connect(`https://` + task.Domain, task.Login, task.Password, 1)
-	if !wp.CheckConn() {
-		task.SetLog("Не получилось подключится к wp xmlrpc (https://" + task.Domain + " - " + task.Login + " / " + task.Password + ")")
+	wp := wordpress.NewClient(&wordpress.Options{
+		BaseAPIURL: "https://" + task.Domain + "/wp-json/wp/v2",
+		Username:   task.Login,
+		Password:   task.Password,
+	})
+	if wp == nil {
+		task.SetLog("Не получилось подключится к wp api (https://" + task.Domain + " - " + task.Login + " / " + task.Password + ")")
 		task.SetLog("Пробуем http соединение")
-		wp.Connect(`http://` + task.Domain, task.Login, task.Password, 1)
-		if !wp.CheckConn() {
-			task.SetLog("Не получилось подключится к wp xmlrpc")
-			if wp.GetError() != nil {
-				task.SetError(wp.GetError().Error())
-			}
+		wp = wordpress.NewClient(&wordpress.Options{
+			BaseAPIURL: "https://" + task.Domain + "/wp-json/wp/v2",
+			Username:   task.Login,
+			Password:   task.Password,
+		})
+		if wp == nil {
+			task.SetLog("Не получилось подключится к wp api")
 			go j.Cancel()
-			return false, "Не получилось подключится к wp xmlrpc"
+			return false, "Не получилось подключится к wp api"
 		}
 	}
 
@@ -342,15 +347,20 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 				if err != nil {
 					fmt.Println("ERR.JobHandler.Run.Screenshot", err)
 				} else {
-					err = ioutil.WriteFile(CONF.ImgPath+"/"+strconv.Itoa(task.Id)+"-"+strconv.Itoa(i)+".jpg", *buf, 0644)
+					fileName := strconv.Itoa(task.Id)+"-"+strconv.Itoa(i)+".png"
+					err = ioutil.WriteFile(CONF.ImgPath+"/" + fileName, *buf, 0644)
 					if err != nil {
 						fmt.Println("ERR.JobHandler.Run.Screenshot.2", err)
 					}
-					file, err := wp.UploadFile("", 0, buf, false)
+					file, _, _, err := wp.Media().Create(&wordpress.MediaUploadOptions{
+						Filename:    fileName,
+						ContentType: "image/png",
+						Data:        *buf,
+					})
 					if err != nil {
 						fmt.Println("ERR.JobHandler.Run.Screenshot.3", err)
 					} else {
-						res.Src = file.Url
+						res.Src = file.SourceURL
 					}
 					res.Image = *buf
 				}
@@ -410,17 +420,43 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	task.SetLog("Добавлен результат в базу данных")
 
 	// Отправляем заметку на сайт
-	postId := wp.NewPost(wpPost.Title, rendered, wpPost.CatId, 12)
-	var fault bool
-	if postId > 0 {
-		post := wp.GetPost(postId)
-		if post.Id > 0 {
-			wp.EditPost(postId, wpPost.Title, rendered)
-		}else{
-			fault = true
+	slugName := slug.Make(wpPost.Title)
+	posts, _, _, err := wp.Posts().List("slug=" + slugName)
+	var post *wordpress.Post
+	if posts != nil && len(posts) > 0 {
+		post = &posts[0]
+		post.Content.Raw = wpPost.Content
+		post.Categories = []int{wpPost.CatId}
+		post, _, _, err = wp.Posts().Update(post.ID, post)
+		if err != nil {
+			task.SetLog("Не получилось разместить статью на сайте")
+			go j.Cancel()
 		}
 	}else{
-		fault = true
+		post, _, _, err = wp.Posts().Create(&wordpress.Post{
+			Title: wordpress.Title{
+				Raw: wpPost.Title,
+			},
+			Content: wordpress.Content{
+				Raw: rendered,
+			},
+			Excerpt: wordpress.Excerpt{
+				Raw: "",
+			},
+			Categories: []int{wpPost.CatId},
+			Format: wordpress.PostFormatImage,
+			Type:   wordpress.PostTypePost,
+			Status: wordpress.PostStatusPublish,
+			Slug:   slugName,
+			Author: 1,
+		})
+		if err != nil {
+			task.SetLog("Не получилось разместить статью на сайте")
+			go j.Cancel()
+		}
+	}
+	if post != nil {
+		task.SetLog("Статья размещена на сайте. ID: " + strconv.Itoa(post.ID))
 	}
 	
 	//fmt.Println(wpPost.Links)
@@ -433,16 +469,6 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		go j.Cancel()
 		return false, "Timeout"
 	}
-
-
-	if fault {
-		task.SetLog("Не получилось разместить статью на сайте")
-		task.SetError(wp.GetError().Error())
-		go j.Cancel()
-		return false, "Не получилось разместить статью на сайте"
-	}
-
-	task.SetLog("Статья размещена на сайте")
 
 	task.SetFinished(1, "")
 	fmt.Println(taskId)
