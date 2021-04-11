@@ -230,7 +230,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		task.SetLog("Не получилось подключится к wp api (https://" + task.Domain + " - " + task.Login + " / " + task.Password + ")")
 		task.SetLog("Пробуем http соединение")
 		wp = wordpress.NewClient(&wordpress.Options{
-			BaseAPIURL: "https://" + task.Domain + "/wp-json/wp/v2",
+			BaseAPIURL: "http://" + task.Domain + "/wp-json/wp/v2",
 			Username:   task.Login,
 			Password:   task.Password,
 		})
@@ -419,21 +419,37 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	}
 	task.SetLog("Добавлен результат в базу данных")
 
+	var catId int
+	cats, _, _, _ := wp.Categories().List(map[string]string{
+		"slug": task.Cat,
+	})
+	if cats != nil && len(cats) > 0 {
+		catId = cats[0].ID
+	}
+
 	// Отправляем заметку на сайт
 	slugName := slug.Make(wpPost.Title)
 	posts, _, _, err := wp.Posts().List("slug=" + slugName)
 	var post *wordpress.Post
+	var respBody []byte
+	var check bool
+
 	if posts != nil && len(posts) > 0 {
 		post = &posts[0]
 		post.Content.Raw = wpPost.Content
-		post.Categories = []int{wpPost.CatId}
-		post, _, _, err = wp.Posts().Update(post.ID, post)
+		post.Categories = []int{catId}
+		post, _, respBody, err = wp.Posts().Update(post.ID, post)
 		if err != nil {
-			task.SetLog("Не получилось разместить статью на сайте")
-			go j.Cancel()
+			i := strings.Index(string(respBody), `name="loginform"`)
+			if i > -1 {
+				check = true
+			}else{
+				task.SetLog("Не получилось редактировать статью на сайте. " + err.Error())
+				task.SetLog(string(respBody))
+			}
 		}
 	}else{
-		post, _, _, err = wp.Posts().Create(&wordpress.Post{
+		post, _, respBody, err = wp.Posts().Create(&wordpress.Post{
 			Title: wordpress.Title{
 				Raw: wpPost.Title,
 			},
@@ -443,7 +459,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 			Excerpt: wordpress.Excerpt{
 				Raw: "",
 			},
-			Categories: []int{wpPost.CatId},
+			Categories: []int{catId},
 			Format: wordpress.PostFormatImage,
 			Type:   wordpress.PostTypePost,
 			Status: wordpress.PostStatusPublish,
@@ -451,11 +467,19 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 			Author: 1,
 		})
 		if err != nil {
-			task.SetLog("Не получилось разместить статью на сайте")
-			go j.Cancel()
+			i := strings.Index(string(respBody), `name="loginform"`)
+			if i > -1 {
+				check = true
+			}else{
+				task.SetLog("Не получилось разместить статью на сайте. " + err.Error())
+				task.SetLog(string(respBody))
+			}
 		}
 	}
-	if post != nil {
+
+	if check {
+		task.SetLog("Статья размещена на сайте")
+	} else if post != nil && post.ID != 0 {
 		task.SetLog("Статья размещена на сайте. ID: " + strconv.Itoa(post.ID))
 	}
 	
@@ -471,7 +495,6 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	}
 
 	task.SetFinished(1, "")
-	fmt.Println(taskId)
 	go j.Cancel()
 	return true, "Задача #" + strconv.Itoa(taskId) + " была успешно выполнена"
 }

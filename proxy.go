@@ -43,7 +43,7 @@ func NewProxy() *Proxy {
 
 		return instance
 	}
-	return nil
+	return &Proxy{}
 }
 
 func (p *Proxy) setTimeout(parser int, minutes int) sql.Result {

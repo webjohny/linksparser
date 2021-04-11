@@ -19,6 +19,7 @@ const (
 	CollectionRevisions  = "revisions"
 	CollectionComments   = "comments"
 	CollectionTaxonomies = "taxonomies"
+	CollectionCategories = "categories"
 	CollectionTerms      = "terms"
 	CollectionStatuses   = "statuses"
 	CollectionTypes      = "types"
@@ -65,17 +66,28 @@ func NewClient(options *Options) *Client {
 		log.Println("REDIRECT", r, options.Username, options.Password)
 		return nil
 	})
-	return &Client{
+	client := &Client{
 		req:     req,
 		options: options,
 		baseURL: options.BaseAPIURL,
 	}
+	_, resp, _, _ := client.Users().Me(nil)
+	if resp == nil {
+		return nil
+	}
+	return client
 }
 
 func (client *Client) Users() *UsersCollection {
 	return &UsersCollection{
 		client: client,
 		url:    fmt.Sprintf("%v/%v", client.baseURL, CollectionUsers),
+	}
+}
+func (client *Client) Categories() *CategoriesCollection {
+	return &CategoriesCollection{
+		client: client,
+		url:    fmt.Sprintf("%v/%v", client.baseURL, CollectionCategories),
 	}
 }
 func (client *Client) Posts() *PostsCollection {

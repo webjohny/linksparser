@@ -152,14 +152,18 @@ func (b *Browser) CheckCaptcha(html string) bool {
 
 func (b *Browser) setProxyToContext(proxy *Proxy) chromedp.Tasks {
 	fmt.Print(proxy.Login, proxy.Password)
-	return chromedp.Tasks{
-		network.Enable(),
-		performance.Enable(),
-		page.SetLifecycleEventsEnabled(true),
-		security.SetIgnoreCertificateErrors(true),
-		emulation.SetTouchEmulationEnabled(false),
-		network.SetCacheDisabled(true),
-		chromedp.Authentication(proxy.Login, proxy.Password),
+	if CONF.Env != "local" {
+		return chromedp.Tasks{
+			network.Enable(),
+			performance.Enable(),
+			page.SetLifecycleEventsEnabled(true),
+			security.SetIgnoreCertificateErrors(true),
+			emulation.SetTouchEmulationEnabled(false),
+			network.SetCacheDisabled(true),
+			chromedp.Authentication(proxy.Login, proxy.Password),
+		}
+	}else{
+		return chromedp.Tasks{}
 	}
 }
 
@@ -170,7 +174,7 @@ func (b *Browser) setOpts(proxy *Proxy) []chromedp.ExecAllocatorOption {
 		chromedp.NoSandbox,
 	)
 
-	if proxy != nil {
+	if proxy != nil && CONF.Env != "local" {
 		proxyScheme := proxy.LocalIp
 
 		if proxyScheme != "" {

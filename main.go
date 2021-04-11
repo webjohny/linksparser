@@ -30,13 +30,14 @@ func main() {
 
 	if CONF.Env == "local" {
 
+		//postWP()
 		go func() {
 			job := JobHandler{}
 			job.IsStart = true
 			if job.Browser.Init() {
-				byt, _ := job.Browser.ScreenShot("https://www.investopedia.com/terms/v/virtual-reality.asp")
-				postWP(*byt)
-				//fmt.Println(job.Run(0))
+				//byt, _ := job.Browser.ScreenShot("https://www.investopedia.com/terms/v/virtual-reality.asp")
+				//postWP()
+				fmt.Println(job.Run(0))
 			}
 		}()
 	} else if MYSQL.CountWorkingTasks() > 0 {
@@ -54,7 +55,7 @@ func main() {
 	time.Sleep(time.Minute)
 }
 
-func postWP(image []byte) {
+func postWP() {
 	//task := MYSQL.GetFreeTask(1097080)
 	client := wordpress.NewClient(&wordpress.Options{
 		BaseAPIURL: `http://philli.beget.tech/wp-json/wp/v2`, // example: `http://192.168.99.100:32777/wp-json/wp/v2`
@@ -65,19 +66,26 @@ func postWP(image []byte) {
 	})
 
 	// for eg, to get current user (GET /users/me)
-	currentUser, resp, _, _ := client.Users().Me(map[string]int{})
+	_, resp, body, _ := client.Users().Me(map[string]int{})
 	if resp.StatusCode != http.StatusOK {
 		// handle error
 	}
-	fmt.Println(currentUser)
+	fmt.Println(string(body))
 
-	filee, resp, body, _ := client.Media().Create(&wordpress.MediaUploadOptions{
-		Filename:    "test-image.jpg",
-		ContentType: "image/jpeg",
-		Data:        image,
+
+	cats, _, body, _ := client.Categories().List(map[string]string{
+		"slug": "qa",
 	})
-	log.Println(string(body))
-	log.Fatal(filee)
+	log.Println(cats)
+	log.Fatal(string(body))
+
+	//filee, resp, body, _ := client.Media().Create(&wordpress.MediaUploadOptions{
+	//	Filename:    "test-image.jpg",
+	//	ContentType: "image/jpeg",
+	//	Data:        image,
+	//})
+	//log.Println(string(body))
+	//log.Fatal(filee)
 
 	//slugName := "test-posts-create-2"
 	//posts, _, _, _ := client.Posts().List("slug=" + slugName)
