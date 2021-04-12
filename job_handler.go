@@ -328,11 +328,17 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		titleText := services.ArrayRand(titles)
 		wpPost.Title = services.SetTmpl(titleText, params)
 	}
+
+	if wpPost.Title == "" {
+		wpPost.Title = j.task.Keyword
+	}
 	wpPost.AskedBy = faker.FirstName() + " " + faker.LastName()
 
+	num := rand.Intn(10)+3
+	var checkCollectedData bool
 	if len(links) > 0 {
-		for i := 0; i < 1; i++ {
-		//for i := 0; i < len(links); i++ {
+		//for i := 0; i < 1; i++ {
+		for i := 0; i < len(links); i++ {
 			res := links[i]
 			dsw, err := j.ExtractSimilarWebData(res.Link)
 			if err != nil {
@@ -340,6 +346,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 				task.SetLog("Ошибка загрузки на ресурсе: " + res.Link)
 				continue
 			}
+			checkCollectedData = true
 			task.SetLog("Данные получены по ресурсу: " + res.Link)
 
 			if dsw != nil {
@@ -382,106 +389,119 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 					}
 				}
 				wpPost.Links = append(wpPost.Links, res)
+				task.SetLog("Данные собраны. Задержка " + strconv.Itoa(num) + " сек.")
 			}
 
-			num := rand.Intn(10)+3
-			task.SetLog("Данные собраны. Задержка " + strconv.Itoa(num) + " сек.")
 			time.Sleep(time.Second * time.Duration(num))
 		}
 	}
 
-	rendered := tmpl.CreateWpPostTmpl(wpPost)
+	if checkCollectedData {
+		rendered := tmpl.CreateWpPostTmpl(wpPost)
 
-	//f, _ := os.Create("data.txt")
-	//
-	//defer f.Close()
-	//
-	//f.WriteString(rendered)
-	//
-	//fmt.Println("done")
-	//return
+		//f, _ := os.Create("data.txt")
+		//
+		//defer f.Close()
+		//
+		//f.WriteString(rendered)
+		//
+		//fmt.Println("done")
+		//return
 
-	jsLinks, _ := json.Marshal(wpPost.Links)
+		jsLinks, _ := json.Marshal(wpPost.Links)
 
-	_, err =  MYSQL.AddResult(map[string]interface{}{
-		"domain": task.Domain,
-		"site_id": task.SiteId,
-		"cat_id": task.CatId,
-		"task_id": task.Id,
-		"keyword": wpPost.Title,
-		"author": wpPost.AskedBy,
-		"links": string(jsLinks),
-		"text": wpPost.Text,
-		"content": wpPost.Content,
-	})
-	if err != nil {
-		fmt.Println("ERR.JobHandler.Run.AddResult", err)
-	}
-	task.SetLog("Добавлен результат в базу данных")
-
-	var catId int
-	cats, _, _, _ := wp.Categories().List(map[string]string{
-		"slug": task.Cat,
-	})
-	if cats != nil && len(cats) > 0 {
-		catId = cats[0].ID
-	}
-
-	// Отправляем заметку на сайт
-	slugName := slug.Make(wpPost.Title)
-	posts, _, _, err := wp.Posts().List("slug=" + slugName)
-	var post *wordpress.Post
-	var respBody []byte
-	var check bool
-
-	if posts != nil && len(posts) > 0 {
-		post = &posts[0]
-		post.Content.Raw = wpPost.Content
-		post.Categories = []int{catId}
-		post, _, respBody, err = wp.Posts().Update(post.ID, post)
-		if err != nil {
-			i := strings.Index(string(respBody), `name="loginform"`)
-			if i > -1 {
-				check = true
-			}else{
-				task.SetLog("Не получилось редактировать статью на сайте. " + err.Error())
-				task.SetLog(string(respBody))
-			}
-		}
-	}else{
-		post, _, respBody, err = wp.Posts().Create(&wordpress.Post{
-			Title: wordpress.Title{
-				Raw: wpPost.Title,
-			},
-			Content: wordpress.Content{
-				Raw: rendered,
-			},
-			Excerpt: wordpress.Excerpt{
-				Raw: "",
-			},
-			Categories: []int{catId},
-			Format: wordpress.PostFormatImage,
-			Type:   wordpress.PostTypePost,
-			Status: wordpress.PostStatusPublish,
-			Slug:   slugName,
-			Author: 1,
+		_, err =  MYSQL.AddResult(map[string]interface{}{
+			"domain": task.Domain,
+			"site_id": task.SiteId,
+			"cat_id": task.CatId,
+			"task_id": task.Id,
+			"keyword": wpPost.Title,
+			"author": wpPost.AskedBy,
+			"links": string(jsLinks),
+			"text": wpPost.Text,
+			"content": wpPost.Content,
 		})
 		if err != nil {
-			i := strings.Index(string(respBody), `name="loginform"`)
-			if i > -1 {
-				check = true
-			}else{
-				task.SetLog("Не получилось разместить статью на сайте. " + err.Error())
-				task.SetLog(string(respBody))
+			fmt.Println("ERR.JobHandler.Run.AddResult", err)
+		}
+		task.SetLog("Добавлен результат в базу данных")
+
+		var catId int
+		cats, _, _, _ := wp.Categories().List(map[string]string{
+			"slug": task.Cat,
+		})
+
+		//jsc, _ := json.Marshal(cats)
+		//fmt.Println(string(jsc))
+		if cats != nil && len(cats) > 0 {
+			catId = cats[0].ID
+		}
+
+		// Отправляем заметку на сайт
+		slugName := slug.Make(wpPost.Title)
+		//jso, _ := json.Marshal(wpPost)
+		//fmt.Println(string(jso))
+		//log.Fatal(slugName)
+		posts, _, _, err := wp.Posts().List("slug=" + slugName)
+		var post *wordpress.Post
+		var respBody []byte
+		var check bool
+
+		if posts != nil && len(posts) > 0 {
+			post = &posts[0]
+			post.Content.Raw = wpPost.Content
+			post.Categories = []int{catId}
+			post, _, respBody, err = wp.Posts().Update(post.ID, post)
+			if err != nil {
+				i := strings.Index(string(respBody), `name="loginform"`)
+				if i > -1 {
+					check = true
+				}else{
+					task.SetLog("Не получилось редактировать статью на сайте. " + err.Error())
+					task.SetLog(string(respBody))
+				}
+			}else if post != nil && post.ID != 0 {
+				task.SetLog("Статья отредактирована на сайте. ID: " + strconv.Itoa(post.ID))
+			}
+		}else{
+			post, _, respBody, err = wp.Posts().Create(&wordpress.Post{
+				Title: wordpress.Title{
+					Raw: wpPost.Title,
+				},
+				Content: wordpress.Content{
+					Raw: rendered,
+				},
+				Excerpt: wordpress.Excerpt{
+					Raw: "",
+				},
+				Categories: []int{catId},
+				Format: wordpress.PostFormatStandard,
+				Type:   wordpress.PostTypePost,
+				Status: wordpress.PostStatusPublish,
+				Slug:   slugName,
+			})
+			if err != nil {
+				i := strings.Index(string(respBody), `name="loginform"`)
+				if i > -1 {
+					check = true
+				}else{
+					task.SetLog("Не получилось разместить статью на сайте. " + err.Error())
+					task.SetLog(string(respBody))
+				}
+			}else if post != nil && post.ID != 0 {
+				task.SetLog("Статья размещена на сайте. ID: " + strconv.Itoa(post.ID))
 			}
 		}
+
+		if check {
+			task.SetLog("Статья размещена на сайте")
+		}
+	}else{
+		task.SetLog("Нет данных для размещения статьи.")
+		go j.Cancel()
+		return false, ""
 	}
 
-	if check {
-		task.SetLog("Статья размещена на сайте")
-	} else if post != nil && post.ID != 0 {
-		task.SetLog("Статья размещена на сайте. ID: " + strconv.Itoa(post.ID))
-	}
 	
 	//fmt.Println(wpPost.Links)
 	//fmt.Println(searchesRelated)

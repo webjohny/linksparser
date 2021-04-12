@@ -43,7 +43,11 @@ func NewProxy() *Proxy {
 
 		return instance
 	}
-	return &Proxy{}
+	if CONF.Env == "local" {
+		return &Proxy{}
+	}else{
+		return nil
+	}
 }
 
 func (p *Proxy) setTimeout(parser int, minutes int) sql.Result {

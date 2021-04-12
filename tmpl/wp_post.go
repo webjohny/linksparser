@@ -11,15 +11,15 @@ import (
 )
 
 type WpPost struct {
-	Title string
-	Content string
-	Url string
-	AskedBy string
-	Text string
-	Links []*LinkResult
-	CatId int
-	Image string
-	Date string
+	Title string `json:"title"`
+	Content string `json:"content"`
+	Url string `json:"url"`
+	AskedBy string `json:"asked_by"`
+	Text string `json:"text"`
+	Links []*LinkResult `json:"links"`
+	CatId int `json:"cat_id"`
+	Image string `json:"image"`
+	Date string `json:"date"`
 }
 
 type LinkResult struct {
