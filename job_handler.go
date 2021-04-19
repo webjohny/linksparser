@@ -166,7 +166,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		}
 
 		// Запускаемся
-		googleUrl = "https://www.google.com/search?q=" + url.QueryEscape(task.Keyword)
+		googleUrl = "https://www.google.com/search?hl=" + task.Language + "q=" + url.QueryEscape(task.Keyword)
 		task.SetLog("Открываем страницу (попытка №" + strconv.Itoa(i) + "): " + googleUrl)
 
 		if j.Browser.ctx != nil {
