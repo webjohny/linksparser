@@ -147,6 +147,7 @@ func (t *FreeTask) FreeTask() {
 	data["log"] = strings.Join(t.Log, "\n")
 	data["log_last"] = lastLog
 	data["stream"] = "NULL"
+	data["status"] = "NULL"
 	data["timeout"] = "NULL"
 	data["try_count"] = t.TryCount
 
@@ -168,6 +169,7 @@ func (t *FreeTask) SetTimeout(parser int) {
 	data := map[string]interface{}{}
 	data["log"] = strings.Join(t.Log, "\n")
 	data["log_last"] = lastLog
+	data["status"] = 0
 	data["stream"] = strconv.Itoa(parser)
 	data["timeout"] = formattedDate
 

@@ -98,16 +98,18 @@ func CreateWpPostTmpl(post WpPost) string {
 			tmpl += `
 				<div class="ca-list-item">
 					<div class="ca-list-item-row">
-						<a class="ca-list-item-img" href="#"><img style="max-width: 230px" src="` + link.Src + `" /></a>
+						<a class="ca-list-item-img" rel="nofollow" href="` + link.Link + `" target="_blank">
+							<img style="max-width: 230px" src="` + link.Src + `" />
+						</a>
 						<div class="ca-list-item-content">
 							<div class="ca-list-item-user">
 								<figure style="background: url('/wp-content/uploads/2021/02/default.jpg') no-repeat center / cover;"></figure>
 								<p class="ca-list-item-by">Asked by: ` + link.Author + `</p>
 								<div class="ca-list-item-tag">Explainer</div>
 							</div>
-							<p class="ca-list-item-title">
+							<h3 class="ca-list-item-title">
 								<a rel="nofollow" href="` + link.Link + `" target="_blank">` + link.Title + `</a>
-							</p>
+							</h3>
 							<p class="ca-list-item-link">` + link.Link + `</p>
 							<p class="ca-list-item-text">` + link.Description + `</p>
 						</div>
