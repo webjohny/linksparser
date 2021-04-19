@@ -14,7 +14,9 @@ import (
 	"linksparser/wordpress"
 	"log"
 	"math/rand"
+	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -109,7 +111,7 @@ func checkHostInArrayLinks(items []*tmpl.LinkResult, link string) bool {
 
 func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	if !j.IsStart {
-		go j.Cancel()
+		j.Cancel()
 		return false, "Задача закрыта"
 	}
 
@@ -128,7 +130,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	}
 
 	if task.Id < 1 {
-		go j.Cancel()
+		j.Cancel()
 		return false, "Свободных задач нет в наличии"
 	}
 	taskId = task.Id
@@ -144,7 +146,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 
 	if task.TryCount == 5 {
 		task.FreeTask()
-		go j.Cancel()
+		j.Cancel()
 		return false, "Исключён после 5 попыток парсинга"
 	}
 
@@ -193,7 +195,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		}else{
 			task.FreeTask()
 			j.Cancel()
-			return false, "Context undefined"
+			return 
 		}
 	}
 
@@ -201,13 +203,12 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		fmt.Println("Задача завершилась преждевременно")
 		task.FreeTask()
 		j.Cancel()
-		return false, "Timeout"
+		return 
 	}
 
 	if searchHtml == "" {
-		fmt.Println("Контент не подгрузился, задачу закрываем")
+		task.SetError("Контент не подгрузился, задачу закрываем")
 		j.Cancel()
-		task.SetLog("Контент не подгрузился, задачу закрываем")
 		return
 	}
 
@@ -215,8 +216,12 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 
 	htmlReader := strings.NewReader(searchHtml)
 	body, err := goquery.NewDocumentFromReader(htmlReader)
-	if err != nil {
+	if err != nil || body == nil {
 		log.Println("JobHandler.SetFastAnswer.HasError", err)
+
+		task.SetError("Нет данных для парсинга.")
+		j.Cancel()
+		return 
 	}
 
 	task.SetLog(`Подключение к ` + task.Domain)
@@ -236,7 +241,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		})
 		if wp == nil {
 			task.SetLog("Не получилось подключится к wp api")
-			go j.Cancel()
+			j.Cancel()
 			return false, "Не получилось подключится к wp api"
 		}
 	}
@@ -253,6 +258,13 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 			linkSel := g.Find(".yuRUbf").Find("a")
 			if linkSel != nil {
 				href, _ := linkSel.Attr("href")
+				parsedUrl, _ := url.Parse(href)
+				if parsedUrl != nil {
+					originUrl := parsedUrl.Query()["url"]
+					if len(originUrl) > 0 && originUrl[0] != "" {
+						href = originUrl[0]
+					}
+				}
 				if href != "" && !checkHostInArrayLinks(links, href) {
 					res.Link = href
 					links = append(links, &res)
@@ -260,6 +272,12 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 			}
 		})
 	})
+
+	if len(links) < 1 {
+		task.SetError("Нет данных для парсинга.")
+		j.Cancel()
+		return false, "Timeout"
+	}
 
 	task.SetLog("Обработка похожих запросов")
 
@@ -331,8 +349,8 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	wpPost.AskedBy = faker.FirstName() + " " + faker.LastName()
 
 	if len(links) > 0 {
-		for i := 0; i < 1; i++ {
-		//for i := 0; i < len(links); i++ {
+		//for i := 0; i < 1; i++ {
+		for i := 0; i < len(links); i++ {
 			res := links[i]
 			dsw, err := j.ExtractSimilarWebData(res.Link)
 			if err != nil {
@@ -343,12 +361,34 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 			task.SetLog("Данные получены по ресурсу: " + res.Link)
 
 			if dsw != nil {
-				buf, err := j.Browser.ScreenShot(res.Link)
-				if err != nil {
-					fmt.Println("ERR.JobHandler.Run.Screenshot", err)
-				} else {
-					fileName := strconv.Itoa(task.Id)+"-"+strconv.Itoa(i)+".png"
-					err = ioutil.WriteFile(CONF.ImgPath+"/" + fileName, *buf, 0644)
+
+				var buf *[]byte
+				if !linkIsReachable(dsw.LargeScreenshot) {
+					buf, err = j.Browser.ScreenShot(res.Link)
+					if err != nil {
+						buf = &[]byte{}
+						fmt.Println("ERR.JobHandler.Run.Screenshot", err)
+					}
+				}else{
+					res, err := http.Get(dsw.LargeScreenshot)
+					if err != nil || res.StatusCode != 200 {
+						fmt.Println(err)
+					}
+					if res != nil {
+						defer res.Body.Close()
+
+						buff, err := ioutil.ReadAll(res.Body)
+						if err != nil {
+							fmt.Println(err)
+						}else{
+							buf = &buff
+						}
+					}
+				}
+
+				if buf != nil {
+					fileName := strconv.Itoa(task.Id) + "-" + strconv.Itoa(i) + ".png"
+					err = ioutil.WriteFile(CONF.ImgPath+"/"+fileName, *buf, 0644)
 					if err != nil {
 						fmt.Println("ERR.JobHandler.Run.Screenshot.2", err)
 					}
@@ -364,6 +404,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 					}
 					res.Image = *buf
 				}
+
 				task.SetLog("Создался скриншот")
 				res.GlobalRank = dsw.GlobalRank.Rank
 				pageViews := strings.Split(dsw.Engagments.Visits, ".")
@@ -444,8 +485,10 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 			if i > -1 {
 				check = true
 			}else{
-				task.SetLog("Не получилось редактировать статью на сайте. " + err.Error())
+				task.SetError("Не получилось редактировать статью на сайте. " + err.Error())
 				task.SetLog(string(respBody))
+				j.Cancel()
+				return false, "Timeout"
 			}
 		}
 	}else{
@@ -471,8 +514,10 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 			if i > -1 {
 				check = true
 			}else{
-				task.SetLog("Не получилось разместить статью на сайте. " + err.Error())
+				task.SetError("Не получилось разместить статью на сайте. " + err.Error())
 				task.SetLog(string(respBody))
+				j.Cancel()
+				return false, "Timeout"
 			}
 		}
 	}
@@ -490,13 +535,42 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 
 	if j.CheckFinished() {
 		task.FreeTask()
-		go j.Cancel()
+		j.Cancel()
 		return false, "Timeout"
 	}
 
 	task.SetFinished(1, "")
-	go j.Cancel()
+	j.Cancel()
 	return true, "Задача #" + strconv.Itoa(taskId) + " была успешно выполнена"
+}
+
+func linkIsReachable(url string) bool{
+	if url == "" {
+		return false
+	}
+	client := http.Client{
+		Timeout: 1 * time.Second,
+	}
+	resp, err := client.Get(url)
+
+	if err != nil {
+		_, netErrors := http.Get("https://www.google.com")
+
+		if netErrors != nil {
+			fmt.Fprintf(os.Stderr, "no internet\n")
+			os.Exit(1)
+		}
+
+		fmt.Println(err)
+
+		return false
+	}
+
+	if resp.StatusCode == 200 {
+		return true
+	}
+
+	return false
 }
 
 func (j *JobHandler) ExtractSimilarWebData(link string) (*SimilarWebResp, error) {

@@ -28,6 +28,16 @@ func main() {
 	// Connect to MysqlDB
 	MYSQL = mysql.CreateConnection(CONF.MysqlHost, CONF.MysqlDb, CONF.MysqlLogin, CONF.MysqlPass)
 
+	//link := "http://google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwjhqbmWtITwAhUUtqQKHekGDdEQFjANegQIIhAD&url=https%3A%2F%2Fwww.slideshare.net%2Fsaishanesarikar%2Fvirtual-reality-ppt-80531390&usg=AOvVaw15fAgjHzHd6bDTqlRAEgOo"
+	//parsedUrl, _ := url.Parse(link)
+	//if parsedUrl != nil {
+	//	originUrl := parsedUrl.Query()["url"]
+	//	if len(originUrl) > 0 {
+	//
+	//	}
+	//}
+	//log.Fatal()
+
 	if CONF.Env == "local" {
 
 		//postWP()
