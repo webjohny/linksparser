@@ -168,7 +168,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		}
 
 		// Запускаемся
-		googleUrl = "https://www.google.com/search?hl=" + task.Language + "q=" + url.QueryEscape(task.Keyword)
+		googleUrl = "https://www.google.com/search?hl=" + task.Language + "&q=" + url.QueryEscape(task.Keyword)
 		task.SetLog("Открываем страницу (попытка №" + strconv.Itoa(i) + "): " + googleUrl)
 
 		if j.Browser.ctx != nil {
@@ -212,8 +212,6 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		return
 	}
 
-	task.SetLog("Контент загружен")
-
 	htmlReader := strings.NewReader(searchHtml)
 	body, err := goquery.NewDocumentFromReader(htmlReader)
 	if err != nil || body == nil {
@@ -223,6 +221,7 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 		j.Cancel()
 		return 
 	}
+	task.SetLog("Контент загружен")
 
 	task.SetLog(`Подключение к ` + task.Domain)
 
@@ -555,13 +554,14 @@ func (j *JobHandler) Run(parser int) (status bool, msg string) {
 	//task.FreeTask()
 	//log.Fatal("STOP")
 
+	task.SetFinished(1, "")
+
 	if j.CheckFinished() {
 		task.FreeTask()
 		j.Cancel()
 		return false, "Timeout"
 	}
 
-	task.SetFinished(1, "")
 	j.Cancel()
 	return true, "Задача #" + strconv.Itoa(taskId) + " была успешно выполнена"
 }
