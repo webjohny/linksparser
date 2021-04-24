@@ -99,6 +99,7 @@ func (b *Browser) checkProxy(proxy *Proxy) bool {
 	fmt.Println(proxy.LocalIp)
 
 	options := b.setOpts(proxy)
+	//@toDo убрать коммент
 	if CONF.Env == "local" {
 		options = append(options, chromedp.Flag("headless", false))
 	}

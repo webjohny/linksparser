@@ -598,6 +598,10 @@ func linkIsReachable(url string) bool{
 func (j *JobHandler) ExtractSimilarWebData(link string) (*SimilarWebResp, error) {
 	var jsonResp string
 
+	if j.Browser.ctx == nil {
+		j.Reload()
+	}
+
 	//dswUrl := link
 	dswUrl := "https://data.similarweb.com/api/v1/data?domain=" + url.QueryEscape(link)
 	if err := chromedp.Run(j.Browser.ctx,
