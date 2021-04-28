@@ -173,6 +173,7 @@ func (b *Browser) setOpts(proxy *Proxy) []chromedp.ExecAllocatorOption {
 		chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.DisableGPU,
 		chromedp.NoSandbox,
+		chromedp.Flag("allow-insecure-localhost", true),
 	)
 
 	if proxy != nil && CONF.Env != "local" {
