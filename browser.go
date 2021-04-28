@@ -51,7 +51,7 @@ func (b *Browser) Init() bool {
 			return false
 		}
 
-		b.Proxy.setTimeout(b.streamId, 5)
+		//b.Proxy.setTimeout(b.streamId, 5)
 
 		if !b.checkProxy(b.Proxy) {
 			return false
@@ -63,7 +63,7 @@ func (b *Browser) Init() bool {
 
 		options := b.setOpts(b.Proxy)
 
-		if CONF.Env == "local" {
+		if CONF.Env != "local" {
 			options = append(options, chromedp.Flag("headless", false))
 		}
 		// Запускаем контекст браузера
@@ -100,7 +100,7 @@ func (b *Browser) checkProxy(proxy *Proxy) bool {
 
 	options := b.setOpts(proxy)
 	//@toDo убрать коммент
-	if CONF.Env == "local" {
+	if CONF.Env != "local" {
 		options = append(options, chromedp.Flag("headless", false))
 	}
 
@@ -140,6 +140,7 @@ func (b *Browser) checkProxy(proxy *Proxy) bool {
 	}
 
 	if searchHtml != "" && !b.CheckCaptcha(searchHtml) {
+		fmt.Println("YES)))")
 		return true
 	}
 
@@ -160,7 +161,7 @@ func (b *Browser) setProxyToContext(proxy *Proxy) chromedp.Tasks {
 			page.SetLifecycleEventsEnabled(true),
 			security.SetIgnoreCertificateErrors(true),
 			emulation.SetTouchEmulationEnabled(false),
-			network.SetCacheDisabled(true),
+			//network.SetCacheDisabled(true),
 			chromedp.Authentication(proxy.Login, proxy.Password),
 		}
 	}else{
