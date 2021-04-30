@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # shellcheck disable=SC2034
-IP_ADDR="45.67.59.191"
+IP_ADDR="45.141.78.99"
 
 cd ../
 export GOOS=linux
