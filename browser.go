@@ -100,7 +100,7 @@ func (b *Browser) checkProxy(proxy *Proxy) bool {
 
 	options := b.setOpts(proxy)
 	//@toDo убрать коммент
-	if CONF.Env != "local" {
+	if CONF.Env == "local" {
 		options = append(options, chromedp.Flag("headless", false))
 	}
 
@@ -174,7 +174,7 @@ func (b *Browser) setOpts(proxy *Proxy) []chromedp.ExecAllocatorOption {
 		chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.DisableGPU,
 		chromedp.NoSandbox,
-		chromedp.Flag("allow-insecure-localhost", true),
+		chromedp.Flag("password-store", false),
 	)
 
 	if proxy != nil && CONF.Env != "local" {
