@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"linksparser/config"
 	"linksparser/wordpress"
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 
 	//"os"
@@ -37,6 +39,7 @@ func main() {
 	//	}
 	//}
 	//log.Fatal()
+	testGetReq()
 
 	if CONF.Env == "local" {
 
@@ -63,6 +66,78 @@ func main() {
 	routes.Run()
 
 	time.Sleep(time.Minute)
+}
+
+func testGetReq(){
+	//url_proxy, _ := url_i.Parse("phillip:I2n9BeJ@45.151.68.227:45785")
+
+	//creating the proxyURL
+	proxyStr := "http://phillip:I2n9BeJ@5.188.52.65:45785"
+	proxyURL, err := url.Parse(proxyStr)
+	if err != nil {
+		log.Println(err)
+	}
+
+	//creating the URL to be loaded through the proxy
+	urlStr := "https://www.google.com/search?q=virtual+reality"
+	//urlStr := "http://httpbin.org/get"
+	url, err := url.Parse(urlStr)
+	if err != nil {
+		log.Println(err)
+	}
+
+	//adding the proxy settings to the Transport object
+	transport := &http.Transport{
+		Proxy: http.ProxyURL(proxyURL),
+	}
+
+	//adding the Transport object to the http Client
+	client := &http.Client{
+		Transport: transport,
+	}
+
+	//generating the HTTP GET request
+	request, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		log.Println(err)
+	}
+
+	request.Header.Set("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
+	request.Header.Set("connection", "keep-alive")
+	request.Header.Set("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36")
+	request.Header.Set("accept-encoding", "gzip, deflate, br")
+	request.Header.Set("accept-language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7")
+	request.Header.Set("cache-control", "no-cache")
+	request.Header.Set("cookie", "CGIC=IocBdGV4dC9odG1sLGFwcGxpY2F0aW9uL3hodG1sK3htbCxhcHBsaWNhdGlvbi94bWw7cT0wLjksaW1hZ2UvYXZpZixpbWFnZS93ZWJwLGltYWdlL2FwbmcsKi8qO3E9MC44LGFwcGxpY2F0aW9uL3NpZ25lZC1leGNoYW5nZTt2PWIzO3E9MC45; CONSENT=YES+UA.ru+20161009-18-0; ANID=AHWqTUkvwxouUV4f1TaH9JR9YsMu4IeIBkeAycj-NbJAafTK-AoTzFFUxU-pNLle; SEARCH_SAMESITE=CgQI-5EB; HSID=AM7F52QcRUd6Vwv23; SSID=ASeSpmCKqkdIYLooz; APISID=evpD-xcogtiDoUIF/AkN184Apyfp8Zge-k; SAPISID=ouhzu1bNBIOH01Ln/A-maxl0J6Ra4aPG7D; __Secure-3PAPISID=ouhzu1bNBIOH01Ln/A-maxl0J6Ra4aPG7D; OTZ=5943417_44_48_123900_44_436380; SID=8wfD0Wdb0ajAn5iVvpdE8cdHKsYV2I-WqYr_Jh0BkpSBQjJeNjADuABim4ct8Pvflll2Og.; __Secure-3PSID=8wfD0Wdb0ajAn5iVvpdE8cdHKsYV2I-WqYr_Jh0BkpSBQjJe4Q_qjLWwn2ZQ5fJfQaLDAQ.; 1P_JAR=2021-05-04-12; NID=214=l4gZSJpwlRlodLkNKsKdxtAJaMe65OYcxpCNb1Yzf0AqSkEsfEBZML-xpHavadbDjakvA9f8dc8FX5FlMHXB4DXys4KaR84OAwNiWTSh0-em6EOUX9u54xKpkYDfZQPP8P8lFwe9sDOtgeaAMwbuOpgPIhZ1Fdko2Svrqse_fgZxHIf8B1Zc9fyOy1L3Jr6-pOOSLl6AUq_PGjMppTntCkV-hFEvBWXY0OPeqg_xODd3hykk2W1TTJjzGbwJMA4fVEXCKKeSgKkYoEJ0DfAP901haH9rj7QGlRF6ddDZmk-pLVJBxj_dfKUfChtb_Hm_06wLsWuqhpKYykxlBIDqMbev6z7BpqLyr1WMM3Fhjehyv7UlMSQkbQeMp1t_9uc; SIDCC=AJi4QfEeTgtjUP6I38tgP4YDMpDpS6PflJytIdzBVPCQ2IbgRksy8GKE4qsifauy1jj0t-3n-MM; __Secure-3PSIDCC=AJi4QfF-k7TRzKo3ht1Pf7S6Yqg2wvkkxzKE5MttdIdVN4EE2jBnuVJLZXiffibyJHIw8WZrgJuL")
+	request.Header.Set("upgrade-insecure-requests", "1")
+	request.Header.Set("pragma", "no-cache")
+	request.Header.Set("sec-ch-ua", `" Not A;Brand";v="99", "Chromium";v="90", "Google Chrome";v="90"`)
+	request.Header.Set("sec-ch-ua-mobile", "?0")
+	request.Header.Set("sec-fetch-dest", "document")
+	request.Header.Set("sec-fetch-mode", "navigate")
+	request.Header.Set("sec-fetch-site", "same-origin")
+	request.Header.Set("sec-fetch-user", "?1")
+//	sec-ch-ua-mobile: ?0
+//	sec-fetch-dest: document
+//	sec-fetch-mode: navigate
+//	sec-fetch-site: same-origin
+//	sec-fetch-user: ?1
+	//'Accept': '*/*', 'Connection': 'keep-alive', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.75 Safari/537.36', 'Accept-Encoding': 'gzip, deflate, br', 'Accept-Language': 'en-US;q=0.5,en;q=0.3', 'Cache-Control': 'max-age=0', 'DNT': '1', 'Upgrade-Insecure-Requests': '1'
+
+	//calling the URL
+	response, err := client.Do(request)
+	if err != nil {
+		log.Println(err)
+	}
+
+	//getting the response
+	data, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Println(err)
+	}
+	//printing the response
+	log.Fatal(string(data))
+	//fmt.Println(client.Get("https://www.google.com/search?q=virtual+reality"))
 }
 
 func postWP() {
